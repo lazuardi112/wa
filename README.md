@@ -102,12 +102,8 @@ npm run dev
 
 ### Mode Produksi (Production)
 
-Mode ini menyimulasikan lingkungan produksi. Frontend akan di-build dan disajikan oleh server backend. Semuanya akan berjalan di **satu port**.
+Mode ini akan secara otomatis **membangun frontend** dan kemudian **menjalankan server produksi**. Semuanya akan berjalan di **satu port**.
 ```bash
-# 1. Build aplikasi React
-npm run build
-
-# 2. Jalankan server produksi
 npm start
 ```
 -   **Aplikasi Lengkap** akan berjalan di `http://localhost:8080`.
