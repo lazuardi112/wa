@@ -10,22 +10,50 @@ module.exports = {
         type: Sequelize.INTEGER
       },
       name: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
+        allowNull: false
       },
       email: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
+        allowNull: false,
+        unique: true
       },
       password: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
+        allowNull: false
       },
       whatsappNumber: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
+        allowNull: false,
+        unique: true
       },
       role: {
-        type: Sequelize.ENUM('user', 'admin')
+        type: Sequelize.ENUM('user', 'admin'),
+        defaultValue: 'user'
       },
       isVerified: {
-        type: Sequelize.BOOLEAN
+        type: Sequelize.BOOLEAN,
+        defaultValue: false
+      },
+      packageId: {
+        type: Sequelize.INTEGER,
+        references: {
+          model: 'Packages',
+          key: 'id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'SET NULL'
+      },
+      packageExpiresAt: {
+        type: Sequelize.DATE
+      },
+      apiKey: {
+        type: Sequelize.STRING,
+        unique: true
+      },
+      apiAccessStatus: {
+        type: Sequelize.ENUM('none', 'requested', 'approved'),
+        defaultValue: 'none'
       },
       createdAt: {
         allowNull: false,
