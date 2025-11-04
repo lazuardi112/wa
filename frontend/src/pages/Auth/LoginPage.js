@@ -9,18 +9,11 @@ import {
   Typography,
   Paper,
   Alert,
-  CircularProgress,
 } from '@mui/material';
 
-const RegisterPage = () => {
-    const [formData, setFormData] = useState({
-        name: '',
-        email: '',
-        password: '',
-        whatsappNumber: '',
-    });
+const LoginPage = () => {
+    const [formData, setFormData] = useState({ email: '', password: '' });
     const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
     const handleChange = (e) => {
@@ -30,14 +23,13 @@ const RegisterPage = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
-        setLoading(true);
         try {
-            const res = await axios.post('/api/v1/auth/register', formData);
-            setLoading(false);
-            navigate(`/verify-otp?userId=${res.data.userId}`);
+            const res = await axios.post('/api/v1/auth/login', formData);
+            // Assuming the token is returned in res.data.token
+            localStorage.setItem('authToken', res.data.token);
+            navigate('/'); // Navigate to dashboard on successful login
         } catch (err) {
-            setLoading(false);
-            setError(err.response?.data?.message || 'Registration failed. Please try again.');
+            setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
         }
     };
 
@@ -45,22 +37,10 @@ const RegisterPage = () => {
         <Container component="main" maxWidth="xs">
             <Paper elevation={3} sx={{ marginTop: 8, padding: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 <Typography component="h1" variant="h5">
-                    Sign Up
+                    Sign In
                 </Typography>
                 <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
                     {error && <Alert severity="error" sx={{ width: '100%', mb: 2 }}>{error}</Alert>}
-                    <TextField
-                        margin="normal"
-                        required
-                        fullWidth
-                        id="name"
-                        label="Full Name"
-                        name="name"
-                        autoComplete="name"
-                        autoFocus
-                        value={formData.name}
-                        onChange={handleChange}
-                    />
                     <TextField
                         margin="normal"
                         required
@@ -69,6 +49,7 @@ const RegisterPage = () => {
                         label="Email Address"
                         name="email"
                         autoComplete="email"
+                        autoFocus
                         value={formData.email}
                         onChange={handleChange}
                     />
@@ -80,18 +61,8 @@ const RegisterPage = () => {
                         label="Password"
                         type="password"
                         id="password"
-                        autoComplete="new-password"
+                        autoComplete="current-password"
                         value={formData.password}
-                        onChange={handleChange}
-                    />
-                    <TextField
-                        margin="normal"
-                        required
-                        fullWidth
-                        name="whatsappNumber"
-                        label="WhatsApp Number (e.g., 62812...)"
-                        id="whatsappNumber"
-                        value={formData.whatsappNumber}
                         onChange={handleChange}
                     />
                     <Button
@@ -99,14 +70,13 @@ const RegisterPage = () => {
                         fullWidth
                         variant="contained"
                         sx={{ mt: 3, mb: 2 }}
-                        disabled={loading}
                     >
-                        {loading ? <CircularProgress size={24} /> : 'Sign Up'}
+                        Sign In
                     </Button>
                     <Typography variant="body2" align="center">
-                        Already have an account?{' '}
-                        <RouterLink to="/login" style={{ textDecoration: 'none' }}>
-                            Sign In
+                        Don't have an account?{' '}
+                        <RouterLink to="/register" style={{ textDecoration: 'none' }}>
+                            Sign Up
                         </RouterLink>
                     </Typography>
                 </Box>
@@ -115,4 +85,4 @@ const RegisterPage = () => {
     );
 };
 
-export default RegisterPage;
+export default LoginPage;
