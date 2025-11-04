@@ -1,23 +1,27 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link as RouterLink } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import AppBar from '@mui/material/AppBar';
-import Toolbar from '@mui/material/Toolbar';
-import Typography from '@mui/material/Typography';
-import Button from '@mui/material/Button';
-import Box from '@mui/material/Box';
-import { useAuth } from 'context/AuthContext';
 
-// Import Pages
+// Layout
+import DashboardLayout from 'components/DashboardLayout';
+
+// Auth Pages
 import LoginPage from 'pages/Auth/LoginPage';
 import RegisterPage from 'pages/Auth/RegisterPage';
 import VerifyOtpPage from 'pages/Auth/VerifyOtpPage';
 import AdminLoginPage from 'pages/Auth/AdminLoginPage';
-import UserDashboard from 'pages/User/UserDashboard';
-import AdminDashboard from 'pages/Admin/AdminDashboard';
 
-// Import Components
+// User Pages
+import UserDashboard from 'pages/User/UserDashboard';
+import DevicesPage from 'pages/User/DevicesPage';
+import MessagingPage from 'pages/User/MessagingPage';
+
+// Admin Pages
+import AdminDashboard from 'pages/Admin/AdminDashboard';
+import SettingsPage from 'pages/Admin/SettingsPage';
+
+// Components
 import PrivateRoute from 'components/PrivateRoute';
 
 const darkTheme = createTheme({
@@ -27,52 +31,35 @@ const darkTheme = createTheme({
 });
 
 function App() {
-  const { user, isAdmin, logout } = useAuth();
-
   return (
     <ThemeProvider theme={darkTheme}>
       <CssBaseline />
       <Router>
-        <AppBar position="static">
-          <Toolbar>
-            <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-              <RouterLink to={isAdmin ? "/admin" : "/"} style={{ textDecoration: 'none', color: 'inherit' }}>
-                WhatsApp SaaS
-              </RouterLink>
-            </Typography>
-            {user ? (
-              <Button color="inherit" onClick={logout}>Logout</Button>
-            ) : (
-              <Box>
-                <Button color="inherit" component={RouterLink} to="/login">Login</Button>
-                <Button color="inherit" component={RouterLink} to="/register">Register</Button>
-              </Box>
-            )}
-          </Toolbar>
-        </AppBar>
+        <Routes>
+          {/* Public Auth Routes have a clean layout */}
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/verify-otp" element={<VerifyOtpPage />} />
+          <Route path="/admin/login" element={<AdminLoginPage />} />
 
-        <main>
-          <Routes>
-            {/* Public Auth Routes */}
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            <Route path="/verify-otp" element={<VerifyOtpPage />} />
-            <Route path="/admin/login" element={<AdminLoginPage />} />
-
-            {/* Protected User Routes */}
-            <Route element={<PrivateRoute adminOnly={false} />}>
+          {/* Protected User Routes are wrapped in the DashboardLayout */}
+          <Route element={<PrivateRoute adminOnly={false} />}>
+            <Route element={<DashboardLayout />}>
               <Route path="/" element={<UserDashboard />} />
-              {/* Add other user routes here inside this Outlet */}
+              <Route path="/devices" element={<DevicesPage />} />
+              <Route path="/messaging" element={<MessagingPage />} />
             </Route>
+          </Route>
 
-            {/* Protected Admin Routes */}
-            <Route element={<PrivateRoute adminOnly={true} />}>
+          {/* Protected Admin Routes are also wrapped in the DashboardLayout */}
+          <Route element={<PrivateRoute adminOnly={true} />}>
+            <Route element={<DashboardLayout />}>
               <Route path="/admin" element={<AdminDashboard />} />
-              {/* Add other admin routes here inside this Outlet */}
+              <Route path="/admin/settings" element={<SettingsPage />} />
             </Route>
+          </Route>
 
-          </Routes>
-        </main>
+        </Routes>
       </Router>
     </ThemeProvider>
   );

@@ -30,11 +30,12 @@ const connectToWhatsApp = async (instanceId) => {
   sock.ev.on('connection.update', async (update) => {
     const { connection, lastDisconnect, qr } = update;
     const isOtpDevice = (await db.AdminSetting.findOne({ where: { key: 'otp_instance_id' } }))?.value === instanceId;
+    const eventTarget = isOtpDevice ? 'admin_room' : instanceId; // Admin gets global, users get specific
 
     if (qr) {
       console.log(`[${instanceId}] QR code generated`);
       const eventName = isOtpDevice ? 'otp_device_qr' : 'qr';
-      io.to(instanceId).emit(eventName, qr);
+      io.to(eventTarget).emit(eventName, { instanceId, code: qr });
     }
 
     if (connection === 'close') {
@@ -43,12 +44,12 @@ const connectToWhatsApp = async (instanceId) => {
       console.log(`[${instanceId}] Connection closed. Reason: ${DisconnectReason[statusCode] || 'Unknown'}. Reconnecting: ${shouldReconnect}`);
 
       const device = await db.Device.findOne({ where: { instanceId } });
-      if (device) {
+      if (device && device.status !== 'disconnected') {
         device.status = 'disconnected';
         await device.save();
-        io.to(instanceId).emit('status', 'disconnected');
+        io.to(eventTarget).emit('status', { instanceId, status: 'disconnected' });
       }
-      if(isOtpDevice) io.emit('otp_device_status', 'disconnected');
+      if(isOtpDevice) io.emit('otp_device_status', { status: 'disconnected' });
 
       delete instances[instanceId];
 
@@ -61,12 +62,12 @@ const connectToWhatsApp = async (instanceId) => {
     } else if (connection === 'open') {
       console.log(`[${instanceId}] Connection opened.`);
       const device = await db.Device.findOne({ where: { instanceId } });
-      if (device) {
+      if (device && device.status !== 'connected') {
         device.status = 'connected';
         await device.save();
-        io.to(instanceId).emit('status', 'connected');
+        io.to(eventTarget).emit('status', { instanceId, status: 'connected' });
       }
-      if(isOtpDevice) io.emit('otp_device_status', 'connected');
+      if(isOtpDevice) io.emit('otp_device_status', { status: 'connected' });
     }
   });
 
@@ -119,7 +120,6 @@ const reconnectExistingSessions = async () => {
             connectToWhatsApp(otpInstance.value);
         }
     } catch (error) {
-        // This can happen if the database is not yet migrated.
         console.warn("Could not reconnect sessions, maybe database is not ready yet.", error.message);
     }
 };
