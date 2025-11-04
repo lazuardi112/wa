@@ -1,22 +1,35 @@
 import React from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { useAuth } from 'context/AuthContext';
+import { CircularProgress, Box } from '@mui/material';
 
-// This is a basic PrivateRoute. In a real app, you'd have more robust logic
-// (e.g., checking token validity, user roles from context).
-const PrivateRoute = ({ isAdminRoute = false }) => {
-    const isAuthenticated = !!localStorage.getItem('authToken');
+const PrivateRoute = ({ adminOnly = false }) => {
+    const { user, isAdmin, loading } = useAuth();
+    const location = useLocation();
 
-    // This is a placeholder for admin role check.
-    // You would replace this with actual role data from your auth context.
-    const userRole = 'user'; // or 'admin'
-
-    if (!isAuthenticated) {
-        return <Navigate to="/login" />;
+    if (loading) {
+        // Show a loading spinner while checking auth status
+        return (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+                <CircularProgress />
+            </Box>
+        );
     }
 
-    if (isAdminRoute && userRole !== 'admin') {
-        // If it's an admin route and user is not an admin, redirect them.
-        return <Navigate to="/" />;
+    // If not authenticated, redirect to the appropriate login page
+    if (!user) {
+        const redirectTo = adminOnly ? '/admin/login' : '/login';
+        return <Navigate to={redirectTo} state={{ from: location }} replace />;
+    }
+
+    // If route is for admin only, but user is not an admin, redirect to user dashboard
+    if (adminOnly && !isAdmin) {
+        return <Navigate to="/" replace />;
+    }
+
+    // If route is for users, but user is an admin, redirect to admin dashboard
+    if (!adminOnly && isAdmin) {
+        return <Navigate to="/admin" replace />;
     }
 
     return <Outlet />;

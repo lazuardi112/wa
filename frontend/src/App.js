@@ -7,18 +7,19 @@ import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
+import { useAuth } from 'context/AuthContext';
 
 // Import Pages
 import LoginPage from 'pages/Auth/LoginPage';
 import RegisterPage from 'pages/Auth/RegisterPage';
 import VerifyOtpPage from 'pages/Auth/VerifyOtpPage';
+import AdminLoginPage from 'pages/Auth/AdminLoginPage';
 import UserDashboard from 'pages/User/UserDashboard';
 import AdminDashboard from 'pages/Admin/AdminDashboard';
 
 // Import Components
 import PrivateRoute from 'components/PrivateRoute';
 
-// A simple dark theme for a modern look
 const darkTheme = createTheme({
   palette: {
     mode: 'dark',
@@ -26,54 +27,48 @@ const darkTheme = createTheme({
 });
 
 function App() {
-  // A simple check for auth status. In a real app, this would be in a context.
-  const isAuthenticated = !!localStorage.getItem('authToken');
-
-  const handleLogout = () => {
-    localStorage.removeItem('authToken');
-    // This will force a re-render and redirect to login
-    window.location.href = '/login';
-  };
+  const { user, isAdmin, logout } = useAuth();
 
   return (
     <ThemeProvider theme={darkTheme}>
       <CssBaseline />
       <Router>
-        <Box sx={{ flexGrow: 1 }}>
-          <AppBar position="static">
-            <Toolbar>
-              <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-                <RouterLink to="/" style={{ textDecoration: 'none', color: 'inherit' }}>
-                  WhatsApp SaaS
-                </RouterLink>
-              </Typography>
-              {isAuthenticated ? (
-                <Button color="inherit" onClick={handleLogout}>Logout</Button>
-              ) : (
-                <>
-                  <Button color="inherit" component={RouterLink} to="/login">Login</Button>
-                  <Button color="inherit" component={RouterLink} to="/register">Register</Button>
-                </>
-              )}
-            </Toolbar>
-          </AppBar>
-        </Box>
+        <AppBar position="static">
+          <Toolbar>
+            <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+              <RouterLink to={isAdmin ? "/admin" : "/"} style={{ textDecoration: 'none', color: 'inherit' }}>
+                WhatsApp SaaS
+              </RouterLink>
+            </Typography>
+            {user ? (
+              <Button color="inherit" onClick={logout}>Logout</Button>
+            ) : (
+              <Box>
+                <Button color="inherit" component={RouterLink} to="/login">Login</Button>
+                <Button color="inherit" component={RouterLink} to="/register">Register</Button>
+              </Box>
+            )}
+          </Toolbar>
+        </AppBar>
 
         <main>
           <Routes>
-            {/* Public Routes */}
+            {/* Public Auth Routes */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/verify-otp" element={<VerifyOtpPage />} />
+            <Route path="/admin/login" element={<AdminLoginPage />} />
 
             {/* Protected User Routes */}
-            <Route path="/" element={<PrivateRoute />}>
-              <Route index element={<UserDashboard />} />
+            <Route element={<PrivateRoute adminOnly={false} />}>
+              <Route path="/" element={<UserDashboard />} />
+              {/* Add other user routes here inside this Outlet */}
             </Route>
 
             {/* Protected Admin Routes */}
-            <Route path="/admin" element={<PrivateRoute isAdminRoute={true} />}>
-                <Route index element={<AdminDashboard />} />
+            <Route element={<PrivateRoute adminOnly={true} />}>
+              <Route path="/admin" element={<AdminDashboard />} />
+              {/* Add other admin routes here inside this Outlet */}
             </Route>
 
           </Routes>

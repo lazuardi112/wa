@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate, useSearchParams, Link as RouterLink } from 'react-router-dom';
+import { useAuth } from 'context/AuthContext';
 import {
   Container,
   Box,
@@ -19,11 +20,11 @@ const VerifyOtpPage = () => {
     const [message, setMessage] = useState('');
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
+    const { login } = useAuth();
     const userId = searchParams.get('userId');
 
     useEffect(() => {
         if (!userId) {
-            // If there's no userId in the URL, redirect to register
             navigate('/register');
         }
     }, [userId, navigate]);
@@ -34,12 +35,12 @@ const VerifyOtpPage = () => {
         setMessage('');
         setLoading(true);
         try {
-            const res = await axios.post('/api/v1/auth/verify-otp', { userId, otp });
+            const res = await axios.post('/api/v1/auth/verify-otp', { userId, otp }, { withCredentials: true });
             setLoading(false);
-            setMessage(res.data.message + ' Redirecting to login...');
-            localStorage.setItem('authToken', res.data.token);
+            setMessage(res.data.message + ' Redirecting to dashboard...');
+            login(res.data.user);
             setTimeout(() => {
-                navigate('/'); // Navigate to dashboard
+                navigate('/');
             }, 2000);
         } catch (err) {
             setLoading(false);

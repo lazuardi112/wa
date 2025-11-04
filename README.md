@@ -80,12 +80,18 @@ Jalankan skrip berikut dari **direktori root** proyek. Skrip ini akan menginstal
 npm run install-all
 ```
 
-### 5. Jalankan Migrasi Database
+### 5. Jalankan Migrasi Database & Seeder
 
-Untuk membuat semua tabel yang diperlukan di database Anda, jalankan perintah migrasi dari **direktori root**.
+Untuk membuat semua tabel yang diperlukan dan menambahkan akun admin default, jalankan perintah berikut dari **direktori root**.
+
+**Penting**: Jalankan migrasi terlebih dahulu, baru seeder.
 
 ```bash
+# Membuat struktur tabel
 npm run db:migrate --prefix backend
+
+# Menambahkan akun admin (email: admin@example.com, password: admin123)
+npm run db:seed --prefix backend
 ```
 
 ---

@@ -2,16 +2,43 @@ require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const cors = require('cors');
+const session = require('express-session');
+const SequelizeStore = require('connect-session-sequelize')(session.Store);
 const db = require('./models');
 const { initIO } = require('./socket');
 const { reconnectExistingSessions } = require('./services/whatsappService');
 
 const app = express();
-app.use(cors());
+// Use cors middleware with credentials support
+app.use(cors({
+  origin: 'http://localhost:3000', // Frontend URL
+  credentials: true
+}));
 app.use(express.json());
 
 const server = http.createServer(app);
 const io = initIO(server);
+
+// Session store
+const sessionStore = new SequelizeStore({
+  db: db.sequelize,
+});
+
+// Session middleware
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'a very strong secret key',
+  store: sessionStore,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
+    httpOnly: true
+  }
+}));
+
+// Create Sessions table if it doesn't exist
+sessionStore.sync();
 
 // API Routes
 app.use('/api/v1/auth', require('./routes/authRoutes'));
