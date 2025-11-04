@@ -1,4 +1,4 @@
-const User = require('../models/userModel');
+const db = require('../models');
 
 const apiKeyAuth = async (req, res, next) => {
   const apiKey = req.headers['x-api-key'];
@@ -7,12 +7,11 @@ const apiKeyAuth = async (req, res, next) => {
   }
 
   try {
-    const user = await User.findOne({ apiKey });
+    const user = await db.User.findOne({ where: { apiKey } });
     if (!user || user.apiAccessStatus !== 'approved') {
       return res.status(403).json({ message: 'Invalid or unauthorized API Key' });
     }
 
-    // Check if the user's package has expired
     if (user.packageExpiresAt && new Date() > new Date(user.packageExpiresAt)) {
       return res.status(403).json({ message: 'Your package has expired. Please renew to use the API.' });
     }

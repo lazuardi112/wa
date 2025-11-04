@@ -3,115 +3,132 @@ const { useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/bai
 const { Boom } = require('@hapi/boom');
 const path = require('path');
 const fs = require('fs');
-const Device = require('../models/deviceModel');
 const { getIO } = require('../socket');
+const db = require('../models');
 
-// This object will store all active Baileys instances
 const instances = {};
 const sessionsDir = path.join(__dirname, '..', 'sessions');
 
-// Ensure the sessions directory exists
 if (!fs.existsSync(sessionsDir)) {
   fs.mkdirSync(sessionsDir, { recursive: true });
 }
 
 const connectToWhatsApp = async (instanceId) => {
-  // If an instance for this ID already exists and is connecting/connected, don't create a new one.
-  if (instances[instanceId]) {
-    console.log(`[${instanceId}] Instance already exists.`);
-    return instances[instanceId];
-  }
+  if (instances[instanceId]) return instances[instanceId];
 
   const { state, saveCreds } = await useMultiFileAuthState(path.join(sessionsDir, instanceId));
   const io = getIO();
 
   const sock = makeWASocket({
     auth: state,
-    printQRInTerminal: false, // We will send the QR to the frontend
-    browser: ['WhatsApp SaaS', 'Chrome', '1.0.0'], // Custom browser name
-    version: [2, 2413, 1],
+    printQRInTerminal: false,
+    browser: ['WhatsApp SaaS', 'Chrome', '1.0.0'],
   });
 
   instances[instanceId] = sock;
 
   sock.ev.on('connection.update', async (update) => {
     const { connection, lastDisconnect, qr } = update;
-    const device = await Device.findOne({ instanceId });
+    const isOtpDevice = (await db.AdminSetting.findOne({ where: { key: 'otp_instance_id' } }))?.value === instanceId;
 
     if (qr) {
       console.log(`[${instanceId}] QR code generated`);
-      // Emit QR code to the specific client room
-      io.to(instanceId).emit('qr', qr);
-      if (device && device.status !== 'waiting_qr') {
-        device.status = 'waiting_qr';
-        await device.save();
-        io.to(instanceId).emit('status', 'waiting_qr');
-      }
+      const eventName = isOtpDevice ? 'otp_device_qr' : 'qr';
+      io.to(instanceId).emit(eventName, qr);
     }
 
     if (connection === 'close') {
       const statusCode = (lastDisconnect.error instanceof Boom)?.output?.statusCode;
       const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
-
       console.log(`[${instanceId}] Connection closed. Reason: ${DisconnectReason[statusCode] || 'Unknown'}. Reconnecting: ${shouldReconnect}`);
 
-      if (device && device.status !== 'disconnected') {
+      const device = await db.Device.findOne({ where: { instanceId } });
+      if (device) {
         device.status = 'disconnected';
         await device.save();
         io.to(instanceId).emit('status', 'disconnected');
       }
+      if(isOtpDevice) io.emit('otp_device_status', 'disconnected');
 
       delete instances[instanceId];
 
       if (shouldReconnect) {
-        // Reconnect after a small delay
         setTimeout(() => connectToWhatsApp(instanceId), 5000);
       } else {
-        // Logged out, remove session files
         const sessionPath = path.join(sessionsDir, instanceId);
-        if(fs.existsSync(sessionPath)){
-          fs.rmSync(sessionPath, { recursive: true, force: true });
-        }
-        console.log(`[${instanceId}] Session data removed due to logout.`);
+        if(fs.existsSync(sessionPath)) fs.rmSync(sessionPath, { recursive: true, force: true });
       }
     } else if (connection === 'open') {
-      console.log(`[${instanceId}] Connection opened successfully.`);
-      if (device && device.status !== 'connected') {
+      console.log(`[${instanceId}] Connection opened.`);
+      const device = await db.Device.findOne({ where: { instanceId } });
+      if (device) {
         device.status = 'connected';
         await device.save();
         io.to(instanceId).emit('status', 'connected');
       }
+      if(isOtpDevice) io.emit('otp_device_status', 'connected');
     }
   });
 
   sock.ev.on('creds.update', saveCreds);
-
   return sock;
 };
 
-const getInstance = (instanceId) => {
-  return instances[instanceId];
-};
+const getInstance = (instanceId) => instances[instanceId];
 
-const isInstanceConnected = (instanceId) => {
-    return instanceId in instances && instances[instanceId].user;
-}
+const isInstanceConnected = (instanceId) => !!(instances[instanceId] && instances[instanceId].user);
+
+const sendOtp = async (to, otp) => {
+    const otpInstanceIdSetting = await db.AdminSetting.findOne({ where: { key: 'otp_instance_id' } });
+    if (!otpInstanceIdSetting) throw new Error('OTP sending device is not configured.');
+
+    const instanceId = otpInstanceIdSetting.value;
+    if (!isInstanceConnected(instanceId)) throw new Error('OTP sending device is not connected.');
+
+    const sock = getInstance(instanceId);
+    const formattedNumber = `${to.replace(/\D/g, '')}@s.whatsapp.net`;
+
+    await sock.sendMessage(formattedNumber, {
+        text: `Your verification code is: *${otp}*\nThis code will expire in 10 minutes.`
+    });
+    console.log(`OTP ${otp} sent to ${to}`);
+};
 
 const logoutInstance = async (instanceId) => {
     const sock = getInstance(instanceId);
     if(sock){
         await sock.logout();
-        delete instances[instanceId];
     }
+    delete instances[instanceId];
     const sessionPath = path.join(sessionsDir, instanceId);
-    if(fs.existsSync(sessionPath)){
-      fs.rmSync(sessionPath, { recursive: true, force: true });
-    }
+    if(fs.existsSync(sessionPath)) fs.rmSync(sessionPath, { recursive: true, force: true });
 }
+
+// Function to reconnect existing devices on server restart
+const reconnectExistingSessions = async () => {
+    try {
+        const devices = await db.Device.findAll();
+        console.log(`Reconnecting ${devices.length} user device(s)...`);
+        for (const device of devices) {
+            connectToWhatsApp(device.instanceId);
+        }
+
+        const otpInstance = await db.AdminSetting.findOne({ where: { key: 'otp_instance_id' } });
+        if(otpInstance){
+            console.log('Reconnecting OTP device...');
+            connectToWhatsApp(otpInstance.value);
+        }
+    } catch (error) {
+        // This can happen if the database is not yet migrated.
+        console.warn("Could not reconnect sessions, maybe database is not ready yet.", error.message);
+    }
+};
 
 module.exports = {
   connectToWhatsApp,
   getInstance,
   isInstanceConnected,
-  logoutInstance
+  logoutInstance,
+  sendOtp,
+  reconnectExistingSessions,
 };

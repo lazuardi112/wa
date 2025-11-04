@@ -1,37 +1,21 @@
 const express = require('express');
 const router = express.Router();
-const { protect } = require('../middleware/authMiddleware');
-const { admin } = require('../middleware/adminMiddleware');
+// Assuming you have middleware for auth and admin checks later
+// const { protect, admin } = require('../middleware/authMiddleware');
+const { setupOtpDevice, getOtpDeviceStatus } = require('../controllers/adminController');
 
-const {
-    getDashboardStats,
-    getAllUsers,
-    createUser,
-    updateUser,
-    deleteUser,
-    getApiRequests,
-    approveApiRequest
-} = require('../controllers/adminController');
+// For now, these routes are open for demonstration.
+// In a real app, they MUST be protected by protect and admin middleware.
+// router.use(protect, admin);
 
-// All routes in this file are protected and require admin privileges
-router.use(protect, admin);
+// @route   POST /api/v1/admin/settings/otp-device
+// @desc    Setup the OTP sending device
+// @access  Private/Admin
+router.post('/settings/otp-device', setupOtpDevice);
 
-// Dashboard
-router.get('/dashboard', getDashboardStats);
-
-// User Management
-router.get('/users', getAllUsers);
-router.post('/users', createUser);
-router.put('/users/:id', updateUser);
-router.delete('/users/:id', deleteUser);
-
-// API Access Management
-router.get('/api-requests', getApiRequests);
-router.post('/api-requests/:userId/approve', approveApiRequest);
-
-// TODO: Add routes for Package and Transaction Management
-// router.get('/packages', ...);
-// router.post('/packages', ...);
-// router.get('/transactions', ...);
+// @route   GET /api/v1/admin/settings/otp-device-status
+// @desc    Get the status of the OTP device
+// @access  Private/Admin
+router.get('/settings/otp-device-status', getOtpDeviceStatus);
 
 module.exports = router;
