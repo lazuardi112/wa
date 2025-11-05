@@ -26,8 +26,18 @@
         .close-btn { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
         .close-btn:hover, .close-btn:focus { color: white; }
         #qr-code-display { background: white; padding: 1rem; border-radius: 8px; margin-top: 1.5rem; display: inline-block; line-height: 0; }
-        #qr-code-display.loading p { color: #121212; }
+        #qr-code-display .loading p { color: #121212; }
         input[type="text"] { width: calc(100% - 2rem); padding: 0.75rem; margin-bottom: 1rem; border: 1px solid #333; background-color: #2c2c2c; color: white; border-radius: 4px; }
+
+        /* Loading animation */
+        .dots { display: inline-block; }
+        @keyframes dots {
+            0%, 20% { color: rgba(0,0,0,0); text-shadow: .25em 0 0 rgba(0,0,0,0), .5em 0 0 rgba(0,0,0,0); }
+            40% { color: #121212; text-shadow: .25em 0 0 rgba(0,0,0,0), .5em 0 0 rgba(0,0,0,0); }
+            60% { text-shadow: .25em 0 0 #121212, .5em 0 0 rgba(0,0,0,0); }
+            80%, 100% { text-shadow: .25em 0 0 #121212, .5em 0 0 #121212; }
+        }
+        .dots::after { content: '...'; animation: dots 1.4s infinite; }
     </style>
 </head>
 <body>
@@ -169,7 +179,7 @@
             }
 
             qrCodeDisplay.style.display = 'block';
-            qrCodeDisplay.innerHTML = '<p class="loading">Generating QR Code...</p>';
+            qrCodeDisplay.innerHTML = '<p class="loading">Memuat QR code, harap tunggu<span class="dots">...</span></p>';
 
             try {
                 const response = await fetch('/api/v1/devices/add', {
@@ -215,7 +225,7 @@
 
 
             qrCodeDisplay.style.display = 'block';
-            qrCodeDisplay.innerHTML = '<p class="loading">Generating QR Code...</p>';
+            qrCodeDisplay.innerHTML = '<p class="loading">Memuat QR code, harap tunggu<span class="dots">...</span></p>';
 
             try {
                 const response = await fetch(`/api/v1/devices/${instanceId}/reconnect`, {
