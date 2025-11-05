@@ -41,6 +41,10 @@ Platform ini memungkinkan Anda untuk menghubungkan perangkat WhatsApp Anda dan m
     ```bash
     npm install
     ```
+    > **Catatan Penting:** Jika Anda mengalami masalah koneksi, pastikan Anda menggunakan versi Baileys terbaru dengan menjalankan:
+    > ```bash
+    > npm install @whiskeysockets/baileys@latest
+    > ```
 
 4.  **Jalankan Migrasi & Seeder Database:**
     Perintah ini akan membuat tabel yang diperlukan dan mengisi data awal (seperti akun admin default).

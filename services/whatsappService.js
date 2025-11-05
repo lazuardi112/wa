@@ -18,6 +18,7 @@ async function createWhatsAppSession(instanceId, deviceId) {
     const sock = makeWASocket({
         auth: state,
         printQRInTerminal: false, // Kita akan handle QR secara manual
+        browser: ["Chrome (Linux)", "", ""], // Tiru browser untuk stabilitas
     });
 
     sessions.set(instanceId, { sock, deviceId });
