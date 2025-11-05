@@ -62,7 +62,12 @@
                         <td><%= device.remark %></td>
                         <td><%= device.instanceId %></td>
                         <td class="status-<%= device.status.toLowerCase() %>"><%= device.status %></td>
-                        <td><button class="btn btn-danger" onclick="deleteDevice('<%= device.instanceId %>')">Delete</button></td>
+                        <td>
+                            <% if (device.status.toLowerCase() === 'disconnected') { %>
+                                <button class="btn" onclick="handleReconnect('<%= device.instanceId %>')">Connect</button>
+                            <% } %>
+                            <button class="btn btn-danger" onclick="deleteDevice('<%= device.instanceId %>')">Delete</button>
+                        </td>
                     </tr>
                 <% }); %>
             </tbody>
@@ -114,16 +119,26 @@
 
         // Listen for status updates for any of this user's instances
         socket.on('status', (statusData) => {
-            // If the status update is for the device we are currently trying to connect,
-            // and it's successful, alert the user and reload.
+            const row = document.querySelector(`tr[data-instance-id="${statusData.instanceId}"]`);
+
+            // If the status update is for the device we are currently trying to connect, and it's successful
             if (statusData.instanceId === currentInstanceId && statusData.status === 'connected') {
                 alert('Device connected successfully!');
-                window.location.reload();
-            } else {
-                // For any other status update, just reload the page to ensure the table is up-to-date.
-                // This is a simple way to handle all state changes (e.g., disconnected, etc.)
-                // A more advanced implementation might update the table row directly without a full reload.
-                window.location.reload();
+                window.location.reload(); // Reload to show the updated list
+                return;
+            }
+
+            // For other devices in the table, update their status dynamically
+            if (row) {
+                const statusCell = row.querySelector('td:nth-child(3)');
+                const actionsCell = row.querySelector('td:nth-child(4)');
+                statusCell.textContent = statusData.status;
+                statusCell.className = `status-${statusData.status.toLowerCase()}`;
+
+                // Simple page reload on disconnect to refresh the 'Connect' button state
+                if(statusData.status.toLowerCase() === 'disconnected'){
+                    window.location.reload();
+                }
             }
         });
 
@@ -186,6 +201,36 @@
                 socket.emit('join', instanceId);
             }
         });
+
+        async function handleReconnect(instanceId) {
+            openModal();
+            currentInstanceId = instanceId;
+            socket.emit('join', currentInstanceId);
+
+            // Hide the remark input as we're reconnecting, not creating
+            deviceRemarkInput.style.display = 'none';
+            generateQrBtn.style.display = 'none';
+            document.querySelector('#add-device-modal h2').textContent = 'Reconnecting Device';
+            document.querySelector('#add-device-modal p').textContent = 'Please scan the QR code to reconnect.';
+
+
+            qrCodeDisplay.style.display = 'block';
+            qrCodeDisplay.innerHTML = '<p class="loading">Generating QR Code...</p>';
+
+            try {
+                const response = await fetch(`/api/v1/devices/${instanceId}/reconnect`, {
+                    method: 'POST',
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Failed to reconnect device.');
+                }
+                // QR code will be delivered via the 'qr' socket event
+            } catch (error) {
+                qrCodeDisplay.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            }
+        }
 
         async function deleteDevice(instanceId) {
             if (!confirm('Are you sure you want to delete this device?')) {
