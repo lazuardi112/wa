@@ -31,8 +31,33 @@ const renderDashboard = async (req, res) => {
 // @access  Private
 const renderDevicesPage = async (req, res) => {
     try {
-        const devices = await db.Device.findAll({ where: { userId: req.session.user.id } });
-        res.render('devices', { user: req.session.user, devices });
+        const userId = req.session.user.id;
+        const devices = await db.Device.findAll({ where: { userId } });
+
+        const activeSubscription = await db.Transaction.findOne({
+            where: { userId, status: 'success' },
+            order: [['expiresAt', 'DESC']]
+        });
+
+        let currentPackage;
+        if (activeSubscription && new Date() < new Date(activeSubscription.expiresAt)) {
+            currentPackage = await db.Package.findByPk(activeSubscription.packageId);
+        } else {
+            currentPackage = await db.Package.findOne({ where: { name: 'Free' } });
+        }
+
+        if (!currentPackage) {
+            return res.status(500).send('Error: Default package not found.');
+        }
+
+        const canAddDevice = devices.length < currentPackage.maxDevices;
+
+        res.render('devices', {
+            user: req.session.user,
+            devices,
+            canAddDevice,
+            limit: currentPackage.maxDevices
+        });
     } catch (error) {
         console.error('Devices Page Error:', error);
         res.status(500).send('Error loading devices page.');
@@ -76,9 +101,17 @@ const renderBotPage = async (req, res) => {
 const renderApiDocsPage = async (req, res) => {
     try {
         const newApiKey = req.session.newlyGeneratedApiKey;
-        if (newApiKey) delete req.session.newlyGeneratedApiKey;
-        // const apiKeyExists = await db.ApiKey.findOne({ where: { userId: req.session.user.id } }); // Removed temporarily
-        res.render('api-docs', { apiKey: newApiKey || null, apiKeyExists: false }); // Hardcoded temporarily
+        const apiKeyExists = await db.ApiKey.findOne({ where: { userId: req.session.user.id } });
+
+        res.render('api-docs', {
+            apiKey: newApiKey || null,
+            apiKeyExists: !!apiKeyExists
+        });
+
+        // Delete the key from session AFTER rendering the page
+        if (newApiKey) {
+            delete req.session.newlyGeneratedApiKey;
+        }
     } catch (error) {
         console.error('API Docs Page Error:', error);
         res.status(500).send('Error loading API docs.');
@@ -98,7 +131,25 @@ const renderSubscribePage = async (req, res) => {
 
         const packages = await db.Package.findAll();
         const user = await db.User.findByPk(req.session.user.id);
-        const currentPackage = await db.Package.findByPk(user.packageId || 1); // Default to 1 if null
+
+        // Find the current active subscription first
+        const activeSubscription = await db.Transaction.findOne({
+            where: { userId: user.id, status: 'success' },
+            order: [['expiresAt', 'DESC']]
+        });
+
+        let currentPackage;
+        if (activeSubscription && new Date() < new Date(activeSubscription.expiresAt)) {
+            currentPackage = await db.Package.findByPk(activeSubscription.packageId);
+        } else {
+            // If no active subscription, default to the 'Free' package
+            currentPackage = await db.Package.findOne({ where: { name: 'Free' } });
+        }
+
+        // Handle case where Free package might not exist
+        if (!currentPackage) {
+             return res.status(500).send('Error: Default package not found. Please run seeders.');
+        }
 
         res.render('subscribe', {
             midtransClientKey: clientKeySetting.value,

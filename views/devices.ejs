@@ -48,7 +48,14 @@
     <div class="main-content">
         <div class="header">
             <h1>Manage Your Devices</h1>
-            <button id="open-modal-btn" class="btn">Add New Device</button>
+            <% if (canAddDevice) { %>
+                <button id="open-modal-btn" class="btn">Add New Device</button>
+            <% } else { %>
+                <div>
+                    <p style="margin: 0; text-align: right;">You have reached your device limit (<%= limit %>).</p>
+                    <a href="/subscribe" class="btn" style="margin-top: 0.5rem;">Upgrade Plan</a>
+                </div>
+            <% } %>
         </div>
 
         <table>
