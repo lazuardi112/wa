@@ -21,15 +21,7 @@
   </style>
 </head>
 <body>
-  <div class="sidebar">
-    <h2>Dashboard</h2>
-    <a href="/dashboard">Overview</a>
-    <a href="/devices">Devices</a>
-    <a href="/messaging">Send Message</a>
-    <a href="/bot">WhatsApp Bot</a>
-    <a href="/api-docs">API Docs</a>
-    <a href="/logout">Logout</a>
-  </div>
+  <%- include('partials/sidebar', { active: 'dashboard' }) %>
 
   <div class="main-content">
     <div class="header">
