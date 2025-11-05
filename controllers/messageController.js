@@ -13,16 +13,24 @@ const formatNumber = (number) => {
     return jidNormalizedUser(formatted);
 };
 
-// @desc    Send a single or multiple messages
+// @desc    Send a single or multiple messages, text or media
 // @route   POST /api/v1/message/send
 // @access  Private
 const sendMessage = async (req, res) => {
-    // User object and messageCost are attached by the messageLimitMiddleware
-    const { user, messageCost } = req;
-    const { deviceId, numbers, message } = req.body;
+    const { user } = req;
+    const { deviceId, numbers, message, messageType } = req.body;
+    const mediaFile = req.file;
 
-    if (!deviceId || !numbers || !message) {
-        return res.status(400).json({ message: 'Device ID, numbers, and message are required.' });
+    if (!deviceId || !numbers) {
+        return res.status(400).json({ message: 'Device ID and recipient numbers are required.' });
+    }
+
+    if (messageType === 'text' && !message) {
+        return res.status(400).json({ message: 'Message text is required for text messages.' });
+    }
+
+    if (messageType === 'media' && !mediaFile) {
+        return res.status(400).json({ message: 'A media file is required for media messages.' });
     }
 
     try {
@@ -35,21 +43,44 @@ const sendMessage = async (req, res) => {
         }
 
         const sock = getInstance(device.instanceId);
-        const recipientList = numbers.split(',');
+        const recipientList = numbers.split(',').map(n => n.trim()).filter(n => n);
 
         let successfulSends = 0;
         for (const number of recipientList) {
             try {
                 const jid = formatNumber(number);
-                // Simple logic to detect if message is a URL for an image/doc
-                if (message.startsWith('http') && (message.includes('.jpg') || message.includes('.png'))) {
-                    await sock.sendMessage(jid, { image: { url: message } });
-                } else if (message.startsWith('http') && message.includes('.pdf')) {
-                    await sock.sendMessage(jid, { document: { url: message }, fileName: 'document.pdf' });
+                let sentMessage;
+
+                if (messageType === 'media' && mediaFile) {
+                    const mediaOptions = {
+                        caption: message || '', // Use message as caption, or empty string if not provided
+                        mimetype: mediaFile.mimetype,
+                    };
+
+                    if (mediaFile.mimetype.startsWith('image/')) {
+                        sentMessage = await sock.sendMessage(jid, {
+                            image: mediaFile.buffer,
+                            ...mediaOptions
+                        });
+                    } else if (mediaFile.mimetype === 'application/pdf') {
+                        sentMessage = await sock.sendMessage(jid, {
+                            document: mediaFile.buffer,
+                            fileName: mediaFile.originalname,
+                            ...mediaOptions
+                        });
+                    } else {
+                        console.warn(`Unsupported media type for ${number}: ${mediaFile.mimetype}`);
+                        continue; // Skip to the next number
+                    }
                 } else {
-                    await sock.sendMessage(jid, { text: message });
+                    // Send a simple text message
+                    sentMessage = await sock.sendMessage(jid, { text: message });
                 }
-                successfulSends++;
+
+                if (sentMessage) {
+                    successfulSends++;
+                }
+
                 // Add a small delay between messages to avoid being flagged
                 await new Promise(resolve => setTimeout(resolve, 500));
             } catch (e) {
@@ -58,17 +89,20 @@ const sendMessage = async (req, res) => {
         }
 
         // Increment the user's message count by the number of successful sends
-        user.messageCount += successfulSends;
-        await user.save();
+        if (successfulSends > 0) {
+            user.messageCount += successfulSends;
+            await user.save();
+        }
 
-        // Redirect back to the messaging page with a success message
-        // Using redirect for EJS form submission flow
-        // For API usage, a JSON response would be better. We can differentiate later if needed.
-        res.redirect('/messaging?status=success');
+        // Redirect back to the messaging page with a status message
+        const status = successfulSends > 0 ? 'success' : 'error';
+        const msg = successfulSends > 0 ? `Successfully sent ${successfulSends} of ${recipientList.length} messages.` : 'Failed to send messages.';
+        // We will use query params for feedback on redirect. A flash message system would be better.
+        res.redirect(`/messaging?status=${status}&msg=${encodeURIComponent(msg)}`);
 
     } catch (error) {
         console.error(`Failed to send message:`, error);
-        res.status(500).redirect('/messaging?status=error');
+        res.status(500).redirect('/messaging?status=error&msg=An%20internal%20server%20error%20occurred.');
     }
 };
 

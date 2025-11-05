@@ -7,6 +7,7 @@ const { getIO } = require('../socket');
 const qrcode = require('qrcode');
 
 const sessions = new Map();
+const conversationState = new Map(); // Untuk melacak status percakapan bot
 
 // Fungsi utama untuk membuat dan mengelola sesi koneksi
 async function connectToWhatsApp(instanceId, deviceId) {
@@ -65,6 +66,69 @@ async function connectToWhatsApp(instanceId, deviceId) {
             console.log(`[${instanceId}] Connection opened successfully.`);
             await db.Device.update({ status: 'connected' }, { where: { id: deviceId } });
             io.to(instanceId).emit('status_update', { status: 'CONNECTED', message: 'Device connected successfully!', instanceId });
+        }
+    });
+
+    // Listener untuk pesan masuk (logika bot)
+    sock.ev.on('messages.upsert', async ({ messages }) => {
+        const msg = messages[0];
+        if (!msg.message || msg.key.fromMe) return;
+
+        const sender = msg.key.remoteJid;
+        const messageText = (msg.message.conversation || msg.message.extendedTextMessage?.text)?.trim().toLowerCase();
+
+        if (!messageText) return;
+
+        const currentState = conversationState.get(sender);
+
+        try {
+            let flowsToSearch;
+            // Jika pengguna berada dalam percakapan, cari balasan turunan
+            if (currentState) {
+                flowsToSearch = await db.BotFlow.findAll({
+                    where: {
+                        deviceId: deviceId,
+                        isEnabled: true,
+                        parentId: currentState.currentFlowId,
+                    },
+                });
+            } else {
+                // Jika tidak, cari pemicu tingkat atas
+                flowsToSearch = await db.BotFlow.findAll({
+                    where: {
+                        deviceId: deviceId,
+                        isEnabled: true,
+                        parentId: null,
+                    },
+                });
+            }
+
+            const matchedFlow = flowsToSearch.find(flow => messageText === flow.prefix.toLowerCase());
+
+            if (matchedFlow) {
+                await sock.sendMessage(sender, { text: matchedFlow.response });
+                console.log(`[${instanceId}] Bot response sent to ${sender} for prefix "${matchedFlow.prefix}"`);
+
+                // Periksa apakah alur ini memiliki turunan
+                const children = await db.BotFlow.findAll({ where: { parentId: matchedFlow.id, isEnabled: true } });
+
+                if (children.length > 0) {
+                    // Masuk ke status percakapan
+                    conversationState.set(sender, {
+                        currentFlowId: matchedFlow.id,
+                        lastInteraction: Date.now(),
+                    });
+                } else {
+                    // Alur akhir, hapus status
+                    conversationState.delete(sender);
+                }
+            } else if (currentState) {
+                // Jika pengguna berada dalam percakapan tetapi tidak ada yang cocok, keluar
+                conversationState.delete(sender);
+                // Opsional: Kirim pesan "Saya tidak mengerti"
+            }
+        } catch (error) {
+            console.error(`[${instanceId}] Error processing bot logic:`, error);
         }
     });
 
