@@ -97,10 +97,9 @@
         const socket = io();
         let currentInstanceId = null;
 
-        // Join a room for this user to receive targeted updates
+        // Event listener for socket connection
         socket.on('connect', () => {
-            console.log('Socket connected, joining room for user <%= user.id %>');
-            socket.emit('join', 'user-<%= user.id %>');
+            console.log('Socket connected');
         });
 
         // Listen for the QR code for the current instance
@@ -115,18 +114,16 @@
 
         // Listen for status updates for any of this user's instances
         socket.on('status', (statusData) => {
+            // If the status update is for the device we are currently trying to connect,
+            // and it's successful, alert the user and reload.
             if (statusData.instanceId === currentInstanceId && statusData.status === 'connected') {
                 alert('Device connected successfully!');
                 window.location.reload();
-                return; // Prevent further processing for the new device
-            }
-
-            // Update status for existing devices in the table
-            const row = document.querySelector(`tr[data-instance-id="${statusData.instanceId}"]`);
-            if(row){
-                const statusCell = row.querySelector('td:nth-child(3)');
-                statusCell.textContent = statusData.status;
-                statusCell.className = `status-${statusData.status.toLowerCase()}`;
+            } else {
+                // For any other status update, just reload the page to ensure the table is up-to-date.
+                // This is a simple way to handle all state changes (e.g., disconnected, etc.)
+                // A more advanced implementation might update the table row directly without a full reload.
+                window.location.reload();
             }
         });
 
@@ -175,9 +172,18 @@
 
                 const data = await response.json();
                 currentInstanceId = data.device.instanceId; // Set current instance for the 'qr' listener
+                socket.emit('join', currentInstanceId); // Join the room for this instance
 
             } catch (error) {
                 qrCodeDisplay.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            }
+        });
+
+        // Re-join rooms for existing devices on page load
+        document.querySelectorAll('#device-list tr').forEach(row => {
+            const instanceId = row.dataset.instanceId;
+            if(instanceId){
+                socket.emit('join', instanceId);
             }
         });
 
