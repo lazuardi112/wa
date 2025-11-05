@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { addDevice, getUserDevices, deleteDevice } = require('../controllers/deviceController');
+const { addDevice, getUserDevices, deleteDevice, reconnectDevice } = require('../controllers/deviceController');
 const { protect } = require('../middleware/authMiddleware');
 
 router.use(protect);
@@ -13,5 +13,8 @@ router.route('/add')
 
 router.route('/:instanceId')
     .delete(deleteDevice);
+
+router.route('/:instanceId/reconnect')
+    .post(reconnectDevice);
 
 module.exports = router;
