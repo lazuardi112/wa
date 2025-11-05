@@ -1,5 +1,5 @@
 const db = require('../models');
-const { getInstance } = require('../services/whatsappService');
+const { getClient } = require('../services/whatsappService');
 const { jidNormalizedUser } = require('@whiskeysockets/baileys');
 
 const formatNumber = (number) => {
@@ -42,7 +42,7 @@ const sendMessage = async (req, res) => {
             return res.status(400).json({ message: 'Device is not connected.' });
         }
 
-        const sock = getInstance(device.instanceId);
+        const sock = getClient(device.instanceId);
         const recipientList = numbers.split(',').map(n => n.trim()).filter(n => n);
 
         let successfulSends = 0;

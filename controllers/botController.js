@@ -22,7 +22,7 @@ const createBotFlow = async (req, res) => {
             userId,
             deviceId,
             prefix,
-            response,
+            response: JSON.parse(response),
             isEnabled: true,
             parentId: parentId || null,
         });
@@ -106,7 +106,7 @@ const updateBotFlow = async (req, res) => {
         await flow.update({
             deviceId,
             prefix,
-            response,
+            response: JSON.parse(response),
             parentId: parentId || null,
         });
 

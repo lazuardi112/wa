@@ -15,10 +15,13 @@
         .card { background: #1e1e1e; padding: 1.5rem; border-radius: 8px; }
         .form-group { margin-bottom: 1rem; }
         label { display: block; margin-bottom: 0.5rem; }
-        input, select, textarea { width: 100%; max-width: 500px; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2c2c2c; color: white; box-sizing: border-box; }
+        input, select, textarea { width: 100%; max-width: 600px; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2c2c2c; color: white; box-sizing: border-box; }
         textarea { min-height: 100px; }
         button { padding: 0.75rem 1.5rem; border: none; border-radius: 4px; background-color: #007bff; color: white; font-size: 1rem; cursor: pointer; }
         a.btn-secondary { background-color: #6c757d; padding: 0.75rem 1.5rem; border-radius: 4px; text-decoration: none; color: white; display: inline-block; margin-left: 1rem; }
+        .response-block { border: 1px solid #444; padding: 1rem; margin-bottom: 1rem; border-radius: 4px; }
+        .btn-add, .btn-remove { background-color: #28a745; margin-top: 0.5rem; }
+        .btn-remove { background-color: #dc3545; }
     </style>
 </head>
 <body>
@@ -26,7 +29,8 @@
     <div class="main-content">
         <h1>Edit Bot Flow</h1>
         <div class="card">
-            <form action="/api/v1/bot/update/<%= flow.id %>" method="POST">
+            <form id="edit-flow-form" action="/api/v1/bot/update/<%= flow.id %>" method="POST">
+                <input type="hidden" name="response" id="response-json">
                 <div class="form-group">
                     <label for="deviceId">Device</label>
                     <select id="deviceId" name="deviceId" required>
@@ -41,11 +45,13 @@
                     <label for="prefix">Prefix (Trigger Keyword)</label>
                     <input type="text" id="prefix" name="prefix" value="<%= flow.prefix %>" required>
                 </div>
-                <div class="form-group">
-                    <label for="response">Response</label>
-                    <textarea id="response" name="response" required><%= flow.response %></textarea>
+
+                <div id="responses-container">
+                    <!-- Responses will be dynamically added here -->
                 </div>
-                <div class="form-group">
+                <button type="button" class="btn-add" onclick="addResponse()">+ Add Response</button>
+
+                <div class="form-group" style="margin-top: 1.5rem;">
                     <label for="parentId">Parent Flow (for branching)</label>
                     <select id="parentId" name="parentId">
                         <option value="">None (Top-level flow)</option>
@@ -63,5 +69,67 @@
             </form>
         </div>
     </div>
+    <script>
+        const responsesContainer = document.getElementById('responses-container');
+        const responseJsonInput = document.getElementById('response-json');
+        const form = document.getElementById('edit-flow-form');
+        let responses = <%- JSON.stringify(flow.response || [{type: 'text', content: ''}]) %>;
+
+        function renderResponses() {
+            responsesContainer.innerHTML = '';
+            responses.forEach((res, index) => {
+                const block = document.createElement('div');
+                block.className = 'response-block';
+                block.innerHTML = \`
+                    <label>Response #${index + 1}</label>
+                    <div class="form-group">
+                        <label for="type-\${index}">Type</label>
+                        <select id="type-\${index}" onchange="updateResponseType(\${index}, this.value)">
+                            <option value="text" \${res.type === 'text' ? 'selected' : ''}>Text</option>
+                            <option value="image" \${res.type === 'image' ? 'selected' : ''}>Image</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="content-\${index}">\${res.type === 'image' ? 'Image URL' : 'Text'}</label>
+                        <textarea id="content-\${index}" oninput="updateResponseContent(\${index}, this.value)" required>\${res.content}</textarea>
+                    </div>
+                    <button type="button" class="btn-remove" onclick="removeResponse(\${index})">Remove</button>
+                \`;
+                responsesContainer.appendChild(block);
+            });
+            updateResponseJson();
+        }
+
+        function addResponse() {
+            responses.push({ type: 'text', content: '' });
+            renderResponses();
+        }
+
+        function removeResponse(index) {
+            responses.splice(index, 1);
+            renderResponses();
+        }
+
+        function updateResponseType(index, type) {
+            responses[index].type = type;
+            renderResponses(); // Re-render to update the label
+        }
+
+        function updateResponseContent(index, content) {
+            responses[index].content = content;
+            updateResponseJson();
+        }
+
+        function updateResponseJson() {
+            responseJsonInput.value = JSON.stringify(responses);
+        }
+
+        form.addEventListener('submit', () => {
+            updateResponseJson();
+        });
+
+        // Initial render
+        renderResponses();
+    </script>
 </body>
 </html>

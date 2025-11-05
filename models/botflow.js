@@ -34,9 +34,9 @@ module.exports = (sequelize, DataTypes) => {
     userId: DataTypes.INTEGER,
     deviceId: DataTypes.INTEGER,
     prefix: DataTypes.STRING,
-    response: DataTypes.TEXT,
+    response: DataTypes.JSON,
     isEnabled: DataTypes.BOOLEAN,
-    parentId: DataTypes.INTEGER
+    parentId: DataTypes.INTEGER,
   }, {
     sequelize,
     modelName: 'BotFlow',
