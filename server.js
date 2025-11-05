@@ -46,6 +46,10 @@ app.use('/api/v1/messages', messageRoutes);
 app.use('/api/v1/payments', paymentRoutes);
 app.use('/api/v1/users', userRoutes);
 
+// View routes
+const viewRoutes = require('./routes/viewRoutes');
+app.use('/', viewRoutes);
+
 
 // Socket.IO
 require('./socket')(io);
