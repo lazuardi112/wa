@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Devices</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #121212; color: white; margin: 0; }
+        .sidebar { position: fixed; width: 250px; height: 100%; background: #1e1e1e; padding: 1rem; }
+        .sidebar h2 { text-align: center; color: #007bff; }
+        .sidebar a { display: block; color: white; padding: 1rem; text-decoration: none; border-radius: 4px; }
+        .sidebar a:hover { background: #333; }
+        .main-content { margin-left: 270px; padding: 2rem; }
+        h1 { color: #007bff; }
+        .btn-add { background-color: #007bff; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; font-size: 1rem; }
+        table { width: 100%; border-collapse: collapse; margin-top: 2rem; }
+        th, td { padding: 1rem; text-align: left; border-bottom: 1px solid #333; }
+        .qr-container { background: white; padding: 2rem; border-radius: 8px; margin-top: 2rem; display: inline-block; }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h2>Dashboard</h2>
+        <a href="/dashboard">Overview</a>
+        <a href="/devices">Devices</a>
+        <a href="/messaging">Send Message</a>
+        <a href="/bot">WhatsApp Bot</a>
+        <a href="/api-docs">API Docs</a>
+        <a href="/logout">Logout</a>
+    </div>
+    <div class="main-content">
+        <h1>Manage Your Devices</h1>
+        <button id="add-device-btn" class="btn-add">Add New Device</button>
+
+        <div id="qr-code-container" style="display: none; margin-top: 2rem;">
+            <h2>Scan QR Code</h2>
+            <div id="qr-code" class="qr-container"></div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Device ID</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% devices.forEach(device => { %>
+                    <tr>
+                        <td><%= device.id %></td>
+                        <td><%= device.status %></td>
+                        <td><button>Delete</button></td>
+                    </tr>
+                <% }); %>
+            </tbody>
+        </table>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator/qrcode.js"></script>
+    <script>
+        const socket = io();
+        const userId = "<%= user.id %>";
+        socket.emit('join', `user-${userId}`);
+
+        document.getElementById('add-device-btn').addEventListener('click', async () => {
+            document.getElementById('qr-code-container').style.display = 'block';
+            document.getElementById('qr-code').innerHTML = '<p>Generating QR Code...</p>';
+
+            // Make an API call to the backend to start a new device session
+            const response = await fetch('/api/v1/devices', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+            });
+            // The backend will emit a 'qr_code' event via WebSocket
+        });
+
+        socket.on('qr_code', (data) => {
+            const qr = qrcode(0, 'M');
+            qr.addData(data.qr);
+            qr.make();
+            document.getElementById('qr-code').innerHTML = qr.createImgTag(8);
+        });
+
+        socket.on('device_status', (data) => {
+            // Logic to update device status on the page or reload
+            if (data.status === 'connected') {
+                alert('Device connected successfully!');
+                window.location.reload();
+            }
+        });
+    </script>
+</body>
+</html>

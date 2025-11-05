@@ -1,56 +1,36 @@
 const db = require('../models');
+const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
 
-// @desc    Get user-specific dashboard stats
-// @route   GET /api/v1/user/dashboard
+// @desc    Generate an API Key for the user
+// @route   POST /api/v1/user/generate-apikey
 // @access  Private
-const getUserDashboard = async (req, res) => {
+const generateApiKey = async (req, res) => {
     try {
-        const userId = req.user.id;
-        const user = await db.User.findByPk(userId, { include: 'package' });
+        const userId = req.session.user.id;
 
-        const totalDevices = await db.Device.count({ where: { userId } });
-        const connectedDevices = await db.Device.count({ where: { userId, status: 'connected' } });
+        const existingKey = await db.ApiKey.findOne({ where: { userId } });
+        if (existingKey) {
+            return res.status(400).redirect('/api-docs'); // Redirect back if key exists
+        }
 
-        res.status(200).json({
-            totalDevices,
-            connectedDevices,
-            packageInfo: user.package,
-            packageExpiresAt: user.packageExpiresAt
+        const rawApiKey = crypto.randomBytes(32).toString('hex');
+        const hashedKey = await bcrypt.hash(rawApiKey, 10);
+
+        await db.ApiKey.create({
+            userId,
+            key: hashedKey
         });
 
+        // Store the raw key in the session to be displayed ONCE.
+        req.session.newlyGeneratedApiKey = rawApiKey;
+
+        res.redirect('/api-docs');
+
     } catch (error) {
-        res.status(500).json({ message: 'Server Error', error: error.message });
+        console.error("API Key Generation Error:", error);
+        res.status(500).redirect('/api-docs');
     }
 };
 
-// @desc    Request API access
-// @route   POST /api/v1/user/api/request
-// @access  Private
-const requestApiAccess = async (req, res) => {
-    try {
-        const user = await db.User.findByPk(req.user.id, { include: 'package' });
-
-        if (!user.package || !user.package.apiAccess) {
-            return res.status(403).json({ message: 'Your current package does not grant API access.' });
-        }
-        if (user.apiAccessStatus === 'approved') {
-            return res.status(400).json({ message: 'API access already approved.' });
-        }
-        if (user.apiAccessStatus === 'requested') {
-            return res.status(400).json({ message: 'Request already submitted.' });
-        }
-
-        user.apiAccessStatus = 'requested';
-        await user.save();
-
-        res.status(200).json({ message: 'API access request submitted successfully.' });
-
-    } catch (error) {
-        res.status(500).json({ message: 'Server Error', error: error.message });
-    }
-};
-
-module.exports = {
-    getUserDashboard,
-    requestApiAccess,
-};
+module.exports = { generateApiKey };

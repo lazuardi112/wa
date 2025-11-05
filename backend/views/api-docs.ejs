@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Documentation</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #121212; color: white; margin: 0; }
+        .sidebar { position: fixed; width: 250px; height: 100%; background: #1e1e1e; padding: 1rem; }
+        .sidebar h2 { text-align: center; color: #007bff; }
+        .sidebar a { display: block; color: white; padding: 1rem; text-decoration: none; border-radius: 4px; }
+        .sidebar a:hover { background: #333; }
+        .main-content { margin-left: 270px; padding: 2rem; }
+        h1, h2 { color: #007bff; }
+        .code-block { background: #2c2c2c; padding: 1rem; border-radius: 4px; margin: 1rem 0; white-space: pre-wrap; font-family: monospace; }
+        .api-key-section { background: #1e1e1e; padding: 1.5rem; border-radius: 8px; margin-top: 2rem; }
+        .btn-generate { background-color: #007bff; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h2>Dashboard</h2>
+        <a href="/dashboard">Overview</a>
+        <a href="/devices">Devices</a>
+        <a href="/messaging">Send Message</a>
+        <a href="/bot">WhatsApp Bot</a>
+        <a href="/api-docs">API Docs</a>
+        <a href="/logout">Logout</a>
+    </div>
+    <div class="main-content">
+        <h1>API Documentation</h1>
+        <div class="api-key-section">
+            <h2>Your API Key</h2>
+            <% if (apiKey) { %>
+                <p>Your new API Key is: <code class="code-block" style="display:inline-block;"><%= apiKey %></code></p>
+                <p><small>This is the only time this key will be shown. Please store it securely.</small></p>
+            <% } else if (apiKeyExists) { %>
+                <p>You have already generated an API key. For security reasons, it cannot be shown again.</p>
+            <% } else { %>
+                <p>You have not generated an API key yet.</p>
+                <form action="/api/v1/user/generate-apikey" method="POST">
+                    <button type="submit" class="btn-generate">Generate API Key</button>
+                </form>
+            <% } %>
+        </div>
+
+        <h2>Send Message</h2>
+        <p><strong>POST</strong> `/api/v1/message/send`</p>
+        <p>Headers:</p>
+        <div class="code-block">X-API-KEY: YOUR_API_KEY</div>
+        <p>Body:</p>
+        <div class="code-block">{
+    "deviceId": "YOUR_DEVICE_ID",
+    "number": "6281234567890",
+    "message": "Hello from API!"
+}</div>
+        <p>To send an image or document, provide a direct URL to the file in the `message` field.</p>
+        <div class="code-block">{
+    "deviceId": "YOUR_DEVICE_ID",
+    "number": "6281234567890",
+    "message": "https://example.com/image.jpg"
+}</div>
+    </div>
+</body>
+</html>

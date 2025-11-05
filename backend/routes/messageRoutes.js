@@ -1,12 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const { sendMessage, sendBroadcast } = require('../controllers/messageController');
+const { sendMessage } = require('../controllers/messageController');
 const { protect } = require('../middleware/authMiddleware');
+const { checkMessageLimit } = require('../middleware/messageLimitMiddleware');
 
-// All message routes are for logged-in users
+// Protect all message routes
 router.use(protect);
 
-router.post('/send', sendMessage);
-router.post('/broadcast', sendBroadcast);
+// Apply message limit middleware to the send route
+router.post('/send', checkMessageLimit, sendMessage);
 
 module.exports = router;
