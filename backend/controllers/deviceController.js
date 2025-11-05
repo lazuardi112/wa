@@ -32,12 +32,8 @@ const addDevice = async (req, res) => {
         });
 
         res.status(201).json({
-            message: 'Device added successfully. Generating QR code...',
-            device: {
-                id: newDevice.id,
-                instanceId: newDevice.instanceId,
-                remark: newDevice.remark,
-            }
+            message: 'Device added. Please scan the QR code in your dashboard.',
+            device: newDevice
         });
     } catch (error) {
         res.status(500).json({ message: 'Server Error', error: error.message });
@@ -77,32 +73,8 @@ const deleteDevice = async (req, res) => {
     }
 };
 
-// @desc    Reconnect a device
-// @route   POST /api/v1/devices/:instanceId/reconnect
-// @access  Private
-const reconnectDevice = async (req, res) => {
-    try {
-        const { instanceId } = req.params;
-        const device = await db.Device.findOne({ where: { instanceId } });
-
-        if (!device || device.userId !== req.user.id) {
-            return res.status(404).json({ message: 'Device not found or not authorized.' });
-        }
-
-        // The service will handle the logic of creating a new session and emitting the QR code
-        connectToWhatsApp(instanceId).catch(err => {
-            console.error(`[${instanceId}] Failed to initiate reconnection:`, err);
-        });
-
-        res.status(200).json({ message: 'Reconnection process initiated. Please wait for the QR code.' });
-    } catch (error) {
-        res.status(500).json({ message: 'Server Error', error: error.message });
-    }
-};
-
 module.exports = {
     addDevice,
     getUserDevices,
     deleteDevice,
-    reconnectDevice,
 };
