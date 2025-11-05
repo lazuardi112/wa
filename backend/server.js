@@ -66,6 +66,20 @@ app.get('/login', (req, res) => {
   res.render('login', { error: '' }); // Render login.ejs
 });
 
+// Rute Halaman Registrasi (GET)
+app.get('/register', (req, res) => {
+    res.render('register', { error: '' });
+});
+
+// Rute Halaman Verifikasi OTP (GET) - Sebaiknya tidak dapat diakses langsung
+app.get('/verify-otp', (req, res) => {
+    // Redirect if no userId is provided, as this page needs context
+    if (!req.query.userId) {
+        return res.redirect('/register');
+    }
+    res.render('verify-otp', { error: '', userId: req.query.userId });
+});
+
 // Rute Proses Login (POST)
 // Formulir login sekarang akan mengirimkan ke rute API otentikasi
 // Lihat backend/routes/authRoutes.js untuk logika penanganan
