@@ -32,7 +32,8 @@
 
         <div class="card">
             <h2>Create New Bot Flow</h2>
-            <form action="/api/v1/bot/create" method="POST">
+            <form id="create-flow-form" action="/api/v1/bot/create" method="POST">
+                <input type="hidden" name="response" id="response-json">
                 <div class="form-group">
                     <label for="deviceId">Select Device</label>
                     <select id="deviceId" name="deviceId" required>
@@ -48,13 +49,13 @@
                     <input type="text" id="prefix" name="prefix" placeholder="e.g., !menu" required>
                 </div>
                 <div class="form-group">
-                    <label for="response">Response</label>
-                    <textarea id="response" name="response" placeholder="The bot's automated reply." required></textarea>
+                    <label for="responseText">Response Text</label>
+                    <textarea id="responseText" placeholder="The bot's automated reply." required></textarea>
                 </div>
                 <div class="form-group">
-                    <label for="mediaUrl">Media URL (Optional)</label>
-                    <input type="text" id="mediaUrl" name="mediaUrl" placeholder="https://example.com/image.jpg">
-                    <small>If provided, the bot will send this image with the response as its caption.</small>
+                    <label for="responseMedia">Media URL (Optional)</label>
+                    <input type="text" id="responseMedia" placeholder="https://example.com/image.jpg">
+                    <small>If provided, the bot will send this image. The text above will be its caption.</small>
                 </div>
                 <div class="form-group">
                     <label for="parentId">Parent Flow (for branching)</label>
@@ -73,7 +74,8 @@
 
         <div class="card">
             <h2>Manage Bot Flows</h2>
-            <table>
+            <!-- Table remains the same -->
+             <table>
                 <thead>
                     <tr>
                         <th>Prefix</th>
@@ -95,7 +97,13 @@
                                 <% if (level > 0) { %><span>&#8627;</span><% } %>
                                 <%= flow.prefix %>
                             </td>
-                            <td><%= flow.response.substring(0, 50) %>...</td>
+                            <td>
+                                <% if (Array.isArray(flow.response)) { %>
+                                    <%= flow.response[0].content.substring(0, 50) %>...
+                                <% } else { %>
+                                    <%= flow.response.substring(0, 50) %>...
+                                <% } %>
+                            </td>
                             <td><%= flow.deviceId %></td>
                             <td><%= flow.isEnabled ? 'Active' : 'Inactive' %></td>
                             <td>
@@ -123,5 +131,36 @@
             </table>
         </div>
     </div>
+    <script>
+        const form = document.getElementById('create-flow-form');
+        const responseJsonInput = document.getElementById('response-json');
+        const responseTextInput = document.getElementById('responseText');
+        const responseMediaInput = document.getElementById('responseMedia');
+
+        form.addEventListener('submit', (e) => {
+            const responses = [];
+            const textContent = responseTextInput.value;
+            const mediaContent = responseMediaInput.value;
+
+            if (mediaContent) {
+                // If there's media, send it first, then the text as a caption (or separate message)
+                // For simplicity, we'll model it as an image message with the text as its content for now
+                responses.push({ type: 'image', content: mediaContent });
+                if (textContent) {
+                    responses.push({ type: 'text', content: textContent });
+                }
+            } else if (textContent) {
+                responses.push({ type: 'text', content: textContent });
+            }
+
+            if (responses.length === 0) {
+                alert('Please provide a response text or media URL.');
+                e.preventDefault();
+                return;
+            }
+
+            responseJsonInput.value = JSON.stringify(responses);
+        });
+    </script>
 </body>
 </html>

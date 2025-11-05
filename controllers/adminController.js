@@ -64,7 +64,14 @@ const showSettingsPage = async (req, res) => {
             db.Setting.findOne({ where: { key: 'midtransClientKey' } }),
             db.Setting.findOne({ where: { key: 'midtransNotificationUrl' } }),
             db.Setting.findOne({ where: { key: 'otpDeviceId' } }),
-            db.Device.findAll({ include: ['user'], where: { status: 'connected' } })
+            db.Device.findAll({
+                where: { status: 'connected' },
+                include: [{
+                    model: db.User,
+                    as: 'user', // Make sure the alias matches the association
+                    attributes: ['id', 'email'] // Only fetch necessary attributes
+                }]
+            })
         ]);
 
         const settings = {
