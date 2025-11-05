@@ -49,20 +49,13 @@ cd <NAMA_FOLDER_PROYEK>
 
 ### 3. Konfigurasi Environment
 
-1.  Buat file `.env` di dalam direktori `backend` dan isi dengan kredensial database Anda:
-    ```env
-    PORT=8080
-    DB_HOST=127.0.0.1
-    DB_USER=root
-    DB_PASSWORD=your_mysql_password
-    DB_NAME=wagateway
-    SESSION_SECRET=your_strong_session_secret
+Proyek ini menggunakan satu file `.env` terpusat di direktori **root** untuk mengelola semua variabel lingkungan.
+
+1.  Buat salinan dari `.env.example`:
+    ```bash
+    cp .env.example .env
     ```
-2.  Buat file `.env` di dalam direktori `frontend` dengan konten berikut untuk memastikan server pengembangan berjalan dengan benar:
-    ```env
-    DANGEROUSLY_DISABLE_HOST_CHECK=true
-    HOST=0.0.0.0
-    ```
+2.  Buka file `.env` yang baru dibuat dan isi dengan konfigurasi Anda. File ini berisi semua yang diperlukan untuk backend (kredensial database) dan frontend. Pastikan untuk mengatur `DB_PASSWORD` dan `SESSION_SECRET` Anda.
 
 ### 4. Instal Dependensi
 

@@ -5,14 +5,15 @@
   "main": "index.js",
   "scripts": {
     "install-all": "npm install && npm install --prefix backend && npm install --prefix frontend",
-    "dev": "concurrently \"npm run dev --prefix backend\" \"npm run start --prefix frontend\"",
-    "build": "npm run build --prefix frontend",
-    "start": "echo 'Building frontend for production...' && npm run build && echo 'Starting production server...' && NODE_ENV=production npm run start --prefix backend",
+    "dev": "dotenv concurrently \"npm run dev --prefix backend\" \"dotenv -- npm run start --prefix frontend\"",
+    "build": "dotenv -- npm run build --prefix frontend",
+    "start": "echo 'Building frontend for production...' && npm run build && echo 'Starting production server...' && NODE_ENV=production dotenv -- npm run start --prefix backend",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "dotenv-cli": "^11.0.0"
   }
 }
