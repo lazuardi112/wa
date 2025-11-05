@@ -1,98 +1,114 @@
 const db = require('../models');
-const { connectToWhatsApp, getInstance } = require('../services/whatsappService');
 
-// @desc    Login for admin users
+// @desc    Show Admin Login Page
+// @route   GET /admin/login
+// @access  Public
+const showLoginPage = (req, res) => {
+    res.render('admin/login', { error: '' });
+};
+
+// @desc    Authenticate Admin
 // @route   POST /api/v1/admin/login
 // @access  Public
-const adminLogin = async (req, res) => {
+const loginAdmin = async (req, res) => {
     const { email, password } = req.body;
     try {
-        const user = await db.User.findOne({ where: { email, role: 'admin' } });
-        if (!user) {
-            return res.status(401).json({ message: 'Access denied or invalid credentials.' });
+        const admin = await db.User.findOne({ where: { email, role: 'admin' } });
+        if (!admin || !(await admin.matchPassword(password))) {
+            return res.status(401).render('admin/login', { error: 'Invalid credentials' });
         }
-        if (await user.matchPassword(password)) {
-            // Create a session for the admin
-            req.session.user = {
-                id: user.id,
-                name: user.name,
-                role: user.role,
-            };
-            res.status(200).json({ message: "Admin logged in successfully", user: req.session.user });
-        } else {
-            res.status(401).json({ message: 'Access denied or invalid credentials.' });
-        }
+        req.session.admin = { id: admin.id, name: admin.name };
+        res.redirect('/admin/dashboard');
     } catch (error) {
-        res.status(500).json({ message: 'Server Error', error: error.message });
+        res.status(500).render('admin/login', { error: 'Server error' });
     }
 };
 
-// @desc    Logout admin (clears session)
-// @route   POST /api/v1/admin/logout
-// @access  Private/Admin
-const adminLogout = (req, res) => {
-    req.session.destroy(err => {
-        if (err) {
-            return res.status(500).json({ message: 'Could not log out.' });
-        }
-        res.clearCookie('connect.sid');
-        res.status(200).json({ message: 'Admin logged out successfully.' });
-    });
+// @desc    Show Admin Dashboard
+// @route   GET /admin/dashboard
+// @access  Private (Admin)
+const showDashboard = (req, res) => {
+    res.render('admin/dashboard');
 };
 
-// @desc    Get admin auth status
-// @route   GET /api/v1/admin/status
-// @access  Public
-const getAdminStatus = (req, res) => {
-    if (req.session.user && req.session.user.role === 'admin') {
-        res.status(200).json({ isAuthenticated: true, user: req.session.user });
-    } else {
-        res.status(200).json({ isAuthenticated: false, user: null });
-    }
-};
-
-
-// @desc    Setup or change the OTP sending device
-// @route   POST /api/v1/admin/settings/otp-device
-// @access  Private/Admin
-const setupOtpDevice = async (req, res) => {
-    const instanceId = `otp_device_${Date.now()}`;
+// @desc    Show Settings Page
+// @route   GET /admin/settings
+// @access  Private (Admin)
+const showSettingsPage = async (req, res) => {
     try {
-        await db.AdminSetting.upsert({
-            key: 'otp_instance_id',
-            value: instanceId
-        });
-        connectToWhatsApp(instanceId);
-        res.status(200).json({
-            message: 'OTP device setup initiated. Scan the QR code.',
-            instanceId
-        });
+        const serverKey = await db.Setting.findOne({ where: { key: 'midtransServerKey' } });
+        const clientKey = await db.Setting.findOne({ where: { key: 'midtransClientKey' } });
+        const notificationUrl = await db.Setting.findOne({ where: { key: 'midtransNotificationUrl' } });
+        const settings = {
+            midtransServerKey: serverKey ? serverKey.value : '',
+            midtransClientKey: clientKey ? clientKey.value : '',
+            midtransNotificationUrl: notificationUrl ? notificationUrl.value : '',
+        };
+        res.render('admin/settings', { settings, message: '' });
     } catch (error) {
-        res.status(500).json({ message: 'Server Error', error: error.message });
+        res.status(500).send("Error fetching settings");
     }
 };
 
-// @desc    Get the status of the OTP sending device
-// @route   GET /api/v1/admin/settings/otp-device-status
-// @access  Private/Admin
-const getOtpDeviceStatus = async (req, res) => {
+// @desc    Save Settings
+// @route   POST /api/v1/admin/settings
+// @access  Private (Admin)
+const saveSettings = async (req, res) => {
+    const { midtransServerKey, midtransClientKey, midtransNotificationUrl } = req.body;
     try {
-        const setting = await db.AdminSetting.findOne({ where: { key: 'otp_instance_id' } });
-        if (!setting) {
-            return res.status(200).json({ status: 'unconfigured' });
-        }
-        const instance = getInstance(setting.value);
-        const status = (instance && instance.user) ? 'connected' : 'disconnected';
-        res.status(200).json({ status });
+        await db.Setting.upsert({ key: 'midtransServerKey', value: midtransServerKey });
+        await db.Setting.upsert({ key: 'midtransClientKey', value: midtransClientKey });
+        await db.Setting.upsert({ key: 'midtransNotificationUrl', value: midtransNotificationUrl });
+
+        // Re-fetch all settings to show the updated values
+        const serverKey = await db.Setting.findOne({ where: { key: 'midtransServerKey' } });
+        const clientKey = await db.Setting.findOne({ where: { key: 'midtransClientKey' } });
+        const notificationUrl = await db.Setting.findOne({ where: { key: 'midtransNotificationUrl' } });
+        const settings = {
+            midtransServerKey: serverKey ? serverKey.value : '',
+            midtransClientKey: clientKey ? clientKey.value : '',
+            midtransNotificationUrl: notificationUrl ? notificationUrl.value : '',
+        };
+        res.render('admin/settings', { settings, message: 'Settings saved successfully!' });
     } catch (error) {
-        res.status(500).json({ message: 'Server Error', error: error.message });
+        res.status(500).send("Error saving settings");
+    }
+};
+
+// @desc    Show User Management Page
+// @route   GET /admin/users
+// @access  Private (Admin)
+const showUsersPage = async (req, res) => {
+    try {
+        const users = await db.User.findAll({ where: { role: 'user' } });
+        res.render('admin/users', { users });
+    } catch (error) {
+        res.status(500).send("Error fetching users");
+    }
+};
+
+// @desc    Toggle User Block Status
+// @route   POST /api/v1/admin/users/:id/toggle-block
+// @access  Private (Admin)
+const toggleUserBlock = async (req, res) => {
+    try {
+        const user = await db.User.findByPk(req.params.id);
+        if (user) {
+            user.isBlocked = !user.isBlocked;
+            await user.save();
+        }
+        res.redirect('/admin/users');
+    } catch (error) {
+        res.status(500).send("Error updating user status");
     }
 };
 
 module.exports = {
-    adminLogin,
-    adminLogout,
-    getAdminStatus,
-    setupOtpDevice,
-    getOtpDeviceStatus,
+    showLoginPage,
+    loginAdmin,
+    showDashboard,
+    showSettingsPage,
+    saveSettings,
+    showUsersPage,
+    toggleUserBlock,
 };
