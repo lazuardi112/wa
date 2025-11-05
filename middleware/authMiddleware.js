@@ -26,4 +26,11 @@ const admin = (req, res, next) => {
     }
 };
 
-module.exports = { protect, admin };
+const redirectIfLoggedIn = (req, res, next) => {
+    if (req.session.user) {
+        return res.redirect('/dashboard');
+    }
+    next();
+};
+
+module.exports = { protect, admin, redirectIfLoggedIn };

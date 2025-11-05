@@ -16,8 +16,10 @@
         .form-group { margin-bottom: 1rem; }
         label { display: block; margin-bottom: 0.5rem; }
         input, select, textarea { width: 100%; max-width: 500px; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2c2c2c; color: white; box-sizing: border-box; }
+        input[type="radio"] { width: auto; }
         textarea { min-height: 120px; }
         button { padding: 0.75rem 1.5rem; border: none; border-radius: 4px; background-color: #007bff; color: white; font-size: 1rem; cursor: pointer; }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
@@ -25,12 +27,14 @@
     <div class="main-content">
         <h1>Send New Message</h1>
         <div class="card">
-            <form action="/api/v1/message/send" method="POST">
+            <form action="/api/v1/message/send" method="POST" enctype="multipart/form-data">
                 <div class="form-group">
                     <label for="deviceId">Select Device</label>
                     <select id="deviceId" name="deviceId" required>
                         <% devices.forEach(device => { %>
-                            <option value="<%= device.id %>"><%= device.id %> (Status: <%= device.status %>)</option>
+                            <option value="<%= device.id %>" <%= device.status !== 'connected' ? 'disabled' : '' %>>
+                                <%= device.id %> (Status: <%= device.status %>)
+                            </option>
                         <% }); %>
                     </select>
                 </div>
@@ -40,13 +44,54 @@
                     <small>For multiple numbers, separate with a comma.</small>
                 </div>
                 <div class="form-group">
-                    <label for="message">Message</label>
+                    <label>Message Type</label>
+                    <input type="radio" id="type_text" name="messageType" value="text" checked>
+                    <label for="type_text" style="display: inline-block;">Text</label>
+                    <input type="radio" id="type_media" name="messageType" value="media">
+                    <label for="type_media" style="display: inline-block;">Image/Document</label>
+                </div>
+
+                <div id="media-upload" class="form-group hidden">
+                    <label for="media">Upload Media</label>
+                    <input type="file" id="media" name="media" accept="image/*,application/pdf">
+                    <small>Upload an image (JPG, PNG) or a document (PDF).</small>
+                </div>
+
+                <div class="form-group">
+                    <label id="message-label" for="message">Message</label>
                     <textarea id="message" name="message" required></textarea>
-                    <small>To send an image or document, paste the direct URL here.</small>
+                    <small id="message-hint">Enter your text message here.</small>
                 </div>
                 <button type="submit">Send Message</button>
             </form>
         </div>
     </div>
+
+    <script>
+        const messageTypeRadios = document.querySelectorAll('input[name="messageType"]');
+        const mediaUploadDiv = document.getElementById('media-upload');
+        const messageLabel = document.getElementById('message-label');
+        const messageHint = document.getElementById('message-hint');
+        const messageTextarea = document.getElementById('message');
+        const mediaInput = document.getElementById('media');
+
+        messageTypeRadios.forEach(radio => {
+            radio.addEventListener('change', (event) => {
+                if (event.target.value === 'media') {
+                    mediaUploadDiv.classList.remove('hidden');
+                    messageLabel.textContent = 'Caption (Optional)';
+                    messageHint.textContent = 'Enter a caption for your media file.';
+                    messageTextarea.required = false;
+                    mediaInput.required = true;
+                } else {
+                    mediaUploadDiv.classList.add('hidden');
+                    messageLabel.textContent = 'Message';
+                    messageHint.textContent = 'Enter your text message here.';
+                    messageTextarea.required = true;
+                    mediaInput.required = false;
+                }
+            });
+        });
+    </script>
 </body>
 </html>
