@@ -32,8 +32,12 @@ const addDevice = async (req, res) => {
         });
 
         res.status(201).json({
-            message: 'Device added. Please scan the QR code in your dashboard.',
-            device: newDevice
+            message: 'Device added successfully. Generating QR code...',
+            device: {
+                id: newDevice.id,
+                instanceId: newDevice.instanceId,
+                remark: newDevice.remark,
+            }
         });
     } catch (error) {
         res.status(500).json({ message: 'Server Error', error: error.message });

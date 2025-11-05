@@ -9,87 +9,199 @@
         .sidebar { position: fixed; width: 250px; height: 100%; background: #1e1e1e; padding: 1rem; }
         .sidebar h2 { text-align: center; color: #007bff; }
         .sidebar a { display: block; color: white; padding: 1rem; text-decoration: none; border-radius: 4px; }
-        .sidebar a:hover { background: #333; }
+        .sidebar a.active, .sidebar a:hover { background: #333; }
         .main-content { margin-left: 270px; padding: 2rem; }
+        .header { display: flex; justify-content: space-between; align-items: center; }
         h1 { color: #007bff; }
-        .btn-add { background-color: #007bff; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; font-size: 1rem; }
+        .btn { background-color: #007bff; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; font-size: 1rem; }
+        .btn-danger { background-color: #dc3545; }
         table { width: 100%; border-collapse: collapse; margin-top: 2rem; }
         th, td { padding: 1rem; text-align: left; border-bottom: 1px solid #333; }
-        .qr-container { background: white; padding: 2rem; border-radius: 8px; margin-top: 2rem; display: inline-block; }
+        .status-connected { color: #28a745; }
+        .status-disconnected { color: #dc3545; }
+
+        /* Modal Styles */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.7); }
+        .modal-content { background-color: #1e1e1e; margin: 10% auto; padding: 2rem; border: 1px solid #888; width: 80%; max-width: 400px; border-radius: 8px; text-align: center; }
+        .close-btn { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .close-btn:hover, .close-btn:focus { color: white; }
+        #qr-code-display { background: white; padding: 1rem; border-radius: 8px; margin-top: 1.5rem; display: inline-block; line-height: 0; }
+        #qr-code-display.loading p { color: #121212; }
+        input[type="text"] { width: calc(100% - 2rem); padding: 0.75rem; margin-bottom: 1rem; border: 1px solid #333; background-color: #2c2c2c; color: white; border-radius: 4px; }
     </style>
 </head>
 <body>
     <div class="sidebar">
         <h2>Dashboard</h2>
         <a href="/dashboard">Overview</a>
-        <a href="/devices">Devices</a>
+        <a href="/devices" class="active">Devices</a>
         <a href="/messaging">Send Message</a>
         <a href="/bot">WhatsApp Bot</a>
         <a href="/api-docs">API Docs</a>
         <a href="/logout">Logout</a>
     </div>
-    <div class="main-content">
-        <h1>Manage Your Devices</h1>
-        <button id="add-device-btn" class="btn-add">Add New Device</button>
 
-        <div id="qr-code-container" style="display: none; margin-top: 2rem;">
-            <h2>Scan QR Code</h2>
-            <div id="qr-code" class="qr-container"></div>
+    <div class="main-content">
+        <div class="header">
+            <h1>Manage Your Devices</h1>
+            <button id="open-modal-btn" class="btn">Add New Device</button>
         </div>
 
         <table>
             <thead>
                 <tr>
-                    <th>Device ID</th>
+                    <th>Remark</th>
+                    <th>Instance ID</th>
                     <th>Status</th>
                     <th>Actions</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="device-list">
                 <% devices.forEach(device => { %>
-                    <tr>
-                        <td><%= device.id %></td>
-                        <td><%= device.status %></td>
-                        <td><button>Delete</button></td>
+                    <tr data-instance-id="<%= device.instanceId %>">
+                        <td><%= device.remark %></td>
+                        <td><%= device.instanceId %></td>
+                        <td class="status-<%= device.status.toLowerCase() %>"><%= device.status %></td>
+                        <td><button class="btn btn-danger" onclick="deleteDevice('<%= device.instanceId %>')">Delete</button></td>
                     </tr>
                 <% }); %>
             </tbody>
         </table>
     </div>
 
+    <!-- The Modal -->
+    <div id="add-device-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h2>Add New WhatsApp Device</h2>
+            <p>Enter a name for your device and click "Generate QR".</p>
+            <input type="text" id="device-remark" placeholder="e.g., Business Phone">
+            <button id="generate-qr-btn" class="btn">Generate QR</button>
+            <div id="qr-code-display" style="display: none;">
+                <!-- QR Code will be rendered here -->
+            </div>
+        </div>
+    </div>
+
     <script src="/socket.io/socket.io.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator/qrcode.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.js"></script>
     <script>
+        const modal = document.getElementById('add-device-modal');
+        const openModalBtn = document.getElementById('open-modal-btn');
+        const closeModalBtn = document.querySelector('.close-btn');
+        const generateQrBtn = document.getElementById('generate-qr-btn');
+        const qrCodeDisplay = document.getElementById('qr-code-display');
+        const deviceRemarkInput = document.getElementById('device-remark');
+        const deviceList = document.getElementById('device-list');
+
         const socket = io();
-        const userId = "<%= user.id %>";
-        socket.emit('join', `user-${userId}`);
+        let currentInstanceId = null;
 
-        document.getElementById('add-device-btn').addEventListener('click', async () => {
-            document.getElementById('qr-code-container').style.display = 'block';
-            document.getElementById('qr-code').innerHTML = '<p>Generating QR Code...</p>';
-
-            // Make an API call to the backend to start a new device session
-            const response = await fetch('/api/v1/devices', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-            });
-            // The backend will emit a 'qr_code' event via WebSocket
+        // Join a room for this user to receive targeted updates
+        socket.on('connect', () => {
+            console.log('Socket connected, joining room for user <%= user.id %>');
+            socket.emit('join', 'user-<%= user.id %>');
         });
 
-        socket.on('qr_code', (data) => {
-            const qr = qrcode(0, 'M');
-            qr.addData(data.qr);
-            qr.make();
-            document.getElementById('qr-code').innerHTML = qr.createImgTag(8);
-        });
-
-        socket.on('device_status', (data) => {
-            // Logic to update device status on the page or reload
-            if (data.status === 'connected') {
-                alert('Device connected successfully!');
-                window.location.reload();
+        // Listen for the QR code for the current instance
+        socket.on('qr', (qrData) => {
+            if (qrData.instanceId === currentInstanceId) {
+                const qr = qrcode(0, 'M');
+                qr.addData(qrData.code);
+                qr.make();
+                qrCodeDisplay.innerHTML = qr.createImgTag(6);
             }
         });
+
+        // Listen for status updates for any of this user's instances
+        socket.on('status', (statusData) => {
+            if (statusData.instanceId === currentInstanceId && statusData.status === 'connected') {
+                alert('Device connected successfully!');
+                window.location.reload();
+                return; // Prevent further processing for the new device
+            }
+
+            // Update status for existing devices in the table
+            const row = document.querySelector(`tr[data-instance-id="${statusData.instanceId}"]`);
+            if(row){
+                const statusCell = row.querySelector('td:nth-child(3)');
+                statusCell.textContent = statusData.status;
+                statusCell.className = `status-${statusData.status.toLowerCase()}`;
+            }
+        });
+
+        const openModal = () => {
+            modal.style.display = 'block';
+            deviceRemarkInput.value = '';
+            qrCodeDisplay.style.display = 'none';
+            qrCodeDisplay.innerHTML = '';
+        };
+
+        const closeModal = () => {
+            modal.style.display = 'none';
+        };
+
+        openModalBtn.onclick = openModal;
+        closeModalBtn.onclick = closeModal;
+        window.onclick = (event) => {
+            if (event.target == modal) {
+                closeModal();
+            }
+        };
+
+        generateQrBtn.addEventListener('click', async () => {
+            const remark = deviceRemarkInput.value.trim();
+            if (!remark) {
+                alert('Please enter a name for the device.');
+                return;
+            }
+
+            qrCodeDisplay.style.display = 'block';
+            qrCodeDisplay.innerHTML = '<p class="loading">Generating QR Code...</p>';
+
+            try {
+                const response = await fetch('/api/v1/devices/add', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ remark }),
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Failed to add device.');
+                }
+
+                const data = await response.json();
+                currentInstanceId = data.device.instanceId; // Set current instance for the 'qr' listener
+
+            } catch (error) {
+                qrCodeDisplay.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            }
+        });
+
+        async function deleteDevice(instanceId) {
+            if (!confirm('Are you sure you want to delete this device?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/v1/devices/${instanceId}`, {
+                    method: 'DELETE',
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Failed to delete device.');
+                }
+
+                alert('Device deleted successfully.');
+                window.location.reload();
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+            }
+        }
     </script>
 </body>
 </html>
