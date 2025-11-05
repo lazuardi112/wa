@@ -39,6 +39,10 @@ module.exports = (sequelize, DataTypes) => {
         model: 'Packages',
         key: 'id'
       }
+    },
+    expiresAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
     }
   }, {
     sequelize,

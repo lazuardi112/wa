@@ -28,6 +28,11 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       defaultValue: 1
     },
+    messageLimit: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 50
+    },
     apiAccess: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
