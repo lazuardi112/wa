@@ -19,7 +19,7 @@
         th, td { padding: 1rem; text-align: left; border-bottom: 1px solid #333; }
         .status-connected { color: #28a745; font-weight: bold; }
         .status-disconnected { color: #dc3545; font-weight: bold; }
-        .status-pending { color: #ffc107; font-weight: bold; }
+        .status-pending, .status-uninitialized, .status-waiting_qr, .status-connecting { color: #ffc107; font-weight: bold; }
 
         /* Modal Styles */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.7); }
@@ -55,20 +55,20 @@
             <thead>
                 <tr>
                     <th>Device Name</th>
-                    <th>Session ID</th>
+                    <th>Instance ID</th>
                     <th>Status</th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody id="device-list">
                 <% devices.forEach(device => { %>
-                    <tr data-device-id="<%= device.id %>" data-session-id="<%= device.sessionId %>">
-                        <td><%= device.name %></td>
-                        <td><%= device.sessionId %></td>
+                    <tr data-device-id="<%= device.id %>" data-instance-id="<%= device.instanceId %>">
+                        <td><%= device.remark %></td>
+                        <td><%= device.instanceId %></td>
                         <td class="status-<%= device.status.toLowerCase() %>"><%= device.status %></td>
                         <td>
                             <% if (device.status.toLowerCase() !== 'connected') { %>
-                                <button class="btn" onclick="handleReconnect('<%= device.id %>', '<%= device.sessionId %>')">Connect</button>
+                                <button class="btn" onclick="handleReconnect('<%= device.id %>', '<%= device.instanceId %>')">Connect</button>
                             <% } %>
                             <button class="btn btn-danger" onclick="deleteDevice('<%= device.id %>')">Delete</button>
                         </td>
@@ -108,16 +108,15 @@
         const modalInputContainer = document.getElementById('modal-input-container');
 
         const socket = io();
-        let currentSessionId = null;
+        let currentInstanceId = null;
 
         socket.on('connect', () => {
             console.log('Socket connected:', socket.id);
-            // Re-join rooms for existing devices on page load/reconnect
             document.querySelectorAll('#device-list tr').forEach(row => {
-                const sessionId = row.dataset.sessionId;
-                if (sessionId) {
-                    console.log(`Joining room: ${sessionId}`);
-                    socket.emit('join_room', sessionId);
+                const instanceId = row.dataset.instanceId;
+                if (instanceId) {
+                    console.log(`Joining room: ${instanceId}`);
+                    socket.emit('join_room', instanceId);
                 }
             });
         });
@@ -131,16 +130,14 @@
         socket.on('status_update', (data) => {
             console.log('Status update received:', data);
 
-            if (data.status === 'CONNECTED' && data.sessionId === currentSessionId) {
+            if (data.status === 'CONNECTED' && data.instanceId === currentInstanceId) {
                 alert(data.message || 'Device connected successfully!');
                 window.location.reload();
                 return;
             }
 
-            const row = document.querySelector(`tr[data-session-id="${data.sessionId}"]`);
+            const row = document.querySelector(`tr[data-instance-id="${data.instanceId}"]`);
             if (row) {
-                 // Reloading is a simple way to reflect all changes (like button states)
-                 // A more advanced implementation would update the DOM dynamically
                  alert(`Device "${row.querySelector('td:first-child').innerText}" status changed to: ${data.status}. Page will reload.`);
                  window.location.reload();
             }
@@ -153,7 +150,7 @@
             deviceNameInput.value = '';
             qrCodeContainer.style.display = 'none';
             qrCodeContainer.innerHTML = '';
-            currentSessionId = null;
+            currentInstanceId = null;
         };
 
         const openModal = () => {
@@ -163,7 +160,7 @@
 
         const closeModal = () => {
             modal.style.display = 'none';
-            currentSessionId = null; // Clear session ID on modal close
+            currentInstanceId = null;
         };
 
         openModalBtn.onclick = openModal;
@@ -197,25 +194,25 @@
                 }
 
                 const data = await response.json();
-                currentSessionId = data.sessionId;
-                console.log(`Device created. Session ID: ${currentSessionId}. Joining room.`);
-                socket.emit('join_room', currentSessionId);
+                currentInstanceId = data.instanceId;
+                console.log(`Device created. Instance ID: ${currentInstanceId}. Joining room.`);
+                socket.emit('join_room', currentInstanceId);
 
             } catch (error) {
                 qrCodeContainer.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
             }
         });
 
-        async function handleReconnect(deviceId, sessionId) {
+        async function handleReconnect(deviceId, instanceId) {
             resetModal();
             modal.style.display = 'block';
 
-            currentSessionId = sessionId;
-            socket.emit('join_room', currentSessionId);
+            currentInstanceId = instanceId;
+            socket.emit('join_room', currentInstanceId);
 
             modalTitle.textContent = 'Reconnect Device';
             modalDescription.textContent = 'Please scan the new QR code to reconnect your device.';
-            modalInputContainer.style.display = 'none'; // Hide input for reconnecting
+            modalInputContainer.style.display = 'none';
 
             qrCodeContainer.style.display = 'block';
             qrCodeContainer.innerHTML = '<p class="loading-text">Requesting new QR code, please wait<span class="dots">...</span></p>';
@@ -231,7 +228,6 @@
                     const errorData = await response.json();
                     throw new Error(errorData.message || 'Failed to reconnect device.');
                 }
-                // QR code will be delivered via the 'qr_code' socket event
                 console.log('Reconnect request successful. Waiting for QR code via socket...');
 
             } catch (error) {

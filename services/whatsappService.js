@@ -10,8 +10,8 @@ const qrRetryCounts = new Map();
 
 const MAX_QR_RETRIES = 3;
 
-async function createWhatsAppSession(sessionId, deviceId) {
-    const sessionPath = path.join(__dirname, '..', 'sessions', sessionId);
+async function createWhatsAppSession(instanceId, deviceId) {
+    const sessionPath = path.join(__dirname, '..', 'sessions', instanceId);
     const { state, saveCreds } = await useMultiFileAuthState(sessionPath);
     const io = getIO();
 
@@ -20,8 +20,8 @@ async function createWhatsAppSession(sessionId, deviceId) {
         printQRInTerminal: false, // Kita akan handle QR secara manual
     });
 
-    sessions.set(sessionId, { sock, deviceId });
-    qrRetryCounts.set(sessionId, 0);
+    sessions.set(instanceId, { sock, deviceId });
+    qrRetryCounts.set(instanceId, 0);
 
     sock.ev.on('creds.update', saveCreds);
 
@@ -31,83 +31,83 @@ async function createWhatsAppSession(sessionId, deviceId) {
         if (qr) {
             try {
                 const qrCodeDataUrl = await qrcode.toDataURL(qr);
-                io.to(sessionId).emit('qr_code', qrCodeDataUrl);
-                console.log(`[${sessionId}] QR code generated and sent to client.`);
+                io.to(instanceId).emit('qr_code', qrCodeDataUrl);
+                console.log(`[${instanceId}] QR code generated and sent to client.`);
             } catch (err) {
-                console.error(`[${sessionId}] Failed to generate QR code data URL:`, err);
+                console.error(`[${instanceId}] Failed to generate QR code data URL:`, err);
             }
         }
 
         if (connection === 'close') {
             const shouldReconnect = (lastDisconnect.error instanceof Boom)?.output?.statusCode !== DisconnectReason.loggedOut;
-            console.log(`[${sessionId}] Connection closed due to`, lastDisconnect.error, `, reconnecting: ${shouldReconnect}`);
+            console.log(`[${instanceId}] Connection closed due to`, lastDisconnect.error, `, reconnecting: ${shouldReconnect}`);
 
-            await db.Device.update({ status: 'DISCONNECTED' }, { where: { id: deviceId } });
-            io.to(sessionId).emit('status_update', { status: 'DISCONNECTED', message: 'Device disconnected.' });
+            await db.Device.update({ status: 'disconnected' }, { where: { id: deviceId } });
+            io.to(instanceId).emit('status_update', { status: 'DISCONNECTED', message: 'Device disconnected.', instanceId });
 
             if (!shouldReconnect) {
-                console.log(`[${sessionId}] Not reconnecting, device logged out.`);
-                deleteSession(sessionId);
+                console.log(`[${instanceId}] Not reconnecting, device logged out.`);
+                deleteSession(instanceId);
             }
         } else if (connection === 'open') {
-            console.log(`[${sessionId}] Connection opened.`);
-            await db.Device.update({ status: 'CONNECTED' }, { where: { id: deviceId } });
-            io.to(sessionId).emit('status_update', { status: 'CONNECTED', message: 'Device connected successfully!' });
+            console.log(`[${instanceId}] Connection opened.`);
+            await db.Device.update({ status: 'connected' }, { where: { id: deviceId } });
+            io.to(instanceId).emit('status_update', { status: 'CONNECTED', message: 'Device connected successfully!', instanceId });
         }
     });
 
     return sock;
 }
 
-async function generateQRCode(sessionId, deviceId) {
-    if (sessions.has(sessionId)) {
-        console.log(`[${sessionId}] Session already exists. Not creating a new one.`);
+async function generateQRCode(instanceId, deviceId) {
+    if (sessions.has(instanceId)) {
+        console.log(`[${instanceId}] Session already exists. Not creating a new one.`);
         return;
     }
-    console.log(`[${sessionId}] Creating new WhatsApp session...`);
-    await createWhatsAppSession(sessionId, deviceId);
+    console.log(`[${instanceId}] Creating new WhatsApp session...`);
+    await createWhatsAppSession(instanceId, deviceId);
 }
 
-async function reconnectSession(sessionId, deviceId) {
-    console.log(`[${sessionId}] Attempting to reconnect session...`);
+async function reconnectSession(instanceId, deviceId) {
+    console.log(`[${instanceId}] Attempting to reconnect session...`);
     // Hapus sesi lama jika ada
-    if (sessions.has(sessionId)) {
-        deleteSession(sessionId);
+    if (sessions.has(instanceId)) {
+        deleteSession(instanceId);
     }
     // Buat sesi baru
-    await createWhatsAppSession(sessionId, deviceId);
+    await createWhatsAppSession(instanceId, deviceId);
 }
 
 
-function deleteSession(sessionId) {
-    if (sessions.has(sessionId)) {
-        sessions.get(sessionId).sock.logout();
-        sessions.delete(sessionId);
-        qrRetryCounts.delete(sessionId);
+function deleteSession(instanceId) {
+    if (sessions.has(instanceId)) {
+        sessions.get(instanceId).sock.logout();
+        sessions.delete(instanceId);
+        qrRetryCounts.delete(instanceId);
 
-        const sessionPath = path.join(__dirname, '..', 'sessions', sessionId);
+        const sessionPath = path.join(__dirname, '..', 'sessions', instanceId);
         // Hapus file sesi secara rekursif (opsional, tambahkan jika perlu)
         // fs.rmdirSync(sessionPath, { recursive: true });
 
-        console.log(`[${sessionId}] Session deleted.`);
+        console.log(`[${instanceId}] Session deleted.`);
     }
 }
 
 async function reconnectExistingSessions() {
     try {
-        const devices = await db.Device.findAll({ where: { status: 'CONNECTED' } });
+        const devices = await db.Device.findAll({ where: { status: 'connected' } });
         console.log(`Found ${devices.length} devices to reconnect.`);
         for (const device of devices) {
-            console.log(`Reconnecting device: ${device.name} (Session: ${device.sessionId})`);
-            await createWhatsAppSession(device.sessionId, device.id);
+            console.log(`Reconnecting device: ${device.remark} (Instance: ${device.instanceId})`);
+            await createWhatsAppSession(device.instanceId, device.id);
         }
     } catch (error) {
         console.error('Error reconnecting existing sessions:', error);
     }
 }
 
-function getClient(sessionId) {
-    return sessions.get(sessionId)?.sock;
+function getClient(instanceId) {
+    return sessions.get(instanceId)?.sock;
 }
 
 module.exports = {
