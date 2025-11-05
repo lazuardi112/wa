@@ -1,33 +1,34 @@
-const { generateQRCode, getClient, deleteSession, reconnectSession } = require('../services/whatsappService');
+const { generateQRCode, deleteSession, reconnectSession } = require('../services/whatsappService');
 const db = require('../models');
 
 // @desc    Create a new device and generate QR code
 // @route   POST /api/v1/devices
 // @access  Private
 const createDevice = async (req, res) => {
-    const { deviceName } = req.body;
+    const { deviceName: remark } = req.body; // Menggunakan deviceName dari frontend sebagai remark
     const userId = req.session.user.id;
-    const sessionId = `user-${userId}_device-${Date.now()}`;
+    const instanceId = `user-${userId}_instance-${Date.now()}`;
 
-    if (!deviceName) {
+    if (!remark) {
         return res.status(400).json({ success: false, message: 'Device name is required.' });
     }
 
     try {
         const device = await db.Device.create({
-            name: deviceName,
-            sessionId: sessionId,
+            remark: remark,
+            instanceId: instanceId,
             userId: userId,
-            status: 'PENDING',
+            status: 'uninitialized',
         });
 
-        // Tidak perlu menunggu generateQRCode selesai, karena itu proses panjang
-        generateQRCode(sessionId, device.id);
+        // Sekarang kita sebut generateQRCode dengan instanceId yang benar
+        generateQRCode(instanceId, device.id);
 
         res.status(201).json({
             success: true,
             message: 'Device created. Please scan the QR code.',
-            sessionId: sessionId,
+            // Mengirimkan kembali instanceId dan deviceId agar frontend tahu sesi mana yang harus didengarkan
+            instanceId: instanceId,
             deviceId: device.id
         });
 
@@ -51,7 +52,8 @@ const deleteDevice = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Device not found.' });
         }
 
-        deleteSession(device.sessionId);
+        // Gunakan instanceId untuk menghapus sesi
+        deleteSession(device.instanceId);
         await device.destroy();
 
         res.status(200).json({ success: true, message: 'Device deleted successfully.' });
@@ -75,16 +77,17 @@ const reconnectDevice = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Device not found.' });
         }
 
-        if (device.status === 'CONNECTED') {
+        if (device.status === 'connected') {
              return res.status(400).json({ success: false, message: 'Device is already connected.'});
         }
 
-        reconnectSession(device.sessionId, device.id);
+        // Gunakan instanceId untuk menyambungkan kembali sesi
+        reconnectSession(device.instanceId, device.id);
 
         res.status(200).json({
             success: true,
             message: 'Reconnection initiated. Please check for a new QR code if needed.',
-            sessionId: device.sessionId
+            instanceId: device.instanceId
         });
 
     } catch (error) {
