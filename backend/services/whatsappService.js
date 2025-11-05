@@ -36,8 +36,29 @@ const connectToWhatsApp = async (instanceId) => {
                 '--disable-accelerated-2d-canvas',
                 '--no-first-run',
                 '--no-zygote',
-                '--single-process', // <- this one doesn't works in Windows
-                '--disable-gpu'
+                '--single-process',
+                '--disable-gpu',
+                '--disable-extensions',
+                '--disable-background-networking',
+                '--enable-features=NetworkService,NetworkServiceInProcess',
+                '--disable-background-timer-throttling',
+                '--disable-backgrounding-occluded-windows',
+                '--disable-breakpad',
+                '--disable-client-side-phishing-detection',
+                '--disable-component-extensions-with-background-pages',
+                '--disable-default-apps',
+                '--disable-features=Translate',
+                '--disable-hang-monitor',
+                '--disable-ipc-flooding-protection',
+                '--disable-popup-blocking',
+                '--disable-prompt-on-repost',
+                '--disable-renderer-backgrounding',
+                '--disable-sync',
+                '--force-color-profile=srgb',
+                '--metrics-recording-only',
+                '--no-pings',
+                '--password-store=basic',
+                '--use-mock-keychain'
             ],
         },
     });
@@ -109,16 +130,41 @@ const reconnectExistingSessions = async () => {
     }
 };
 
-// Functions like sendOtp and getInstance would need to be adapted for whatsapp-web.js
-// For now, focusing on the QR code generation.
+const getInstance = (instanceId) => instances[instanceId];
+
+const isInstanceConnected = (instanceId) => {
+    const client = instances[instanceId];
+    // This is a simplified check. `getState()` might throw, so a more robust check is needed.
+    return client && (client.info ? true : false);
+};
+
 const sendOtp = async (to, otp) => {
-    // This function needs to be rewritten using whatsapp-web.js logic
-    console.warn("sendOtp function is not implemented for whatsapp-web.js yet.");
+    const otpInstanceIdSetting = await db.AdminSetting.findOne({ where: { key: 'otp_instance_id' } });
+    if (!otpInstanceIdSetting?.value) {
+        throw new Error('OTP sending device is not configured.');
+    }
+
+    const instanceId = otpInstanceIdSetting.value;
+    const client = getInstance(instanceId);
+
+    if (!client) {
+        throw new Error('OTP sending device is not initialized.');
+    }
+
+    try {
+        // whatsapp-web.js requires the number to be in the format countrycode+number@c.us
+        const formattedNumber = `${to.replace(/\D/g, '')}@c.us`;
+        await client.sendMessage(formattedNumber, `Your verification code is: *${otp}*\nThis code will expire in 10 minutes.`);
+        console.log(`OTP ${otp} sent to ${to}`);
+    } catch (error) {
+        console.error(`[${instanceId}] Failed to send OTP:`, error);
+        throw new Error('Failed to send OTP. The OTP device may not be ready.');
+    }
 };
 
 module.exports = {
     connectToWhatsApp,
     logoutInstance,
     reconnectExistingSessions,
-    sendOtp, // Placeholder
+    sendOtp,
 };

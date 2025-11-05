@@ -242,15 +242,6 @@ app.use('/api/v1/payment', require('./routes/paymentRoutes'));
 const io = initIO(server);
 io.on('connection', (socket) => {
   console.log('A user connected via WebSocket:', socket.id);
-
-  socket.on('join', (room) => {
-    socket.join(room);
-    console.log(`Socket ${socket.id} joined room ${room}`);
-  });
-
-  socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
-  });
 });
 
 // =====================================================
