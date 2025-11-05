@@ -102,12 +102,17 @@ npm run dev
 
 ### Mode Produksi (Production)
 
-Mode ini akan secara otomatis **membangun frontend** dan kemudian **menjalankan server produksi**. Semuanya akan berjalan di **satu port**.
+Mode ini mengoptimalkan aplikasi untuk kinerja terbaik. Perintah `npm start` yang dijalankan dari direktori **root** akan secara otomatis menangani semuanya:
+1.  **Membangun Frontend**: Menjalankan `npm run build` untuk *frontend*, mengoptimalkan dan memaketkan semua aset React ke dalam direktori `frontend/build`.
+2.  **Menjalankan Server Backend**: Memulai server Node.js dalam mode produksi, yang akan menyajikan *file-file frontend* yang sudah di-*build* dan menangani semua permintaan API.
+
 ```bash
+# Jalankan dari direktori root proyek
 npm start
 ```
--   **Aplikasi Lengkap** akan berjalan di `http://localhost:8080`.
+-   **Aplikasi Lengkap** akan dapat diakses di `http://localhost:8080`.
 
-Buka URL yang sesuai di browser Anda untuk mulai menggunakan aplikasi.
--   Untuk pengguna: `http://localhost:3000/login` (dev) atau `http://localhost:8080/login` (prod).
--   Untuk admin: `http://localhost:3000/admin/login` (dev) atau `http://localhost:8080/admin/login` (prod).
+Setelah server berjalan, buka URL berikut di browser Anda:
+-   **Halaman Login Pengguna**: `http://localhost:8080` atau `http://localhost:8080/login`
+-   **Halaman Login Admin**: `http://localhost:8080/admin/login`
+-   **Dokumentasi API**: `http://localhost:8080/api-docs`
