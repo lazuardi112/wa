@@ -52,6 +52,11 @@
                     <textarea id="response" name="response" placeholder="The bot's automated reply." required></textarea>
                 </div>
                 <div class="form-group">
+                    <label for="mediaUrl">Media URL (Optional)</label>
+                    <input type="text" id="mediaUrl" name="mediaUrl" placeholder="https://example.com/image.jpg">
+                    <small>If provided, the bot will send this image with the response as its caption.</small>
+                </div>
+                <div class="form-group">
                     <label for="parentId">Parent Flow (for branching)</label>
                     <select id="parentId" name="parentId">
                         <option value="">None (Top-level flow)</option>

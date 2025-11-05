@@ -106,7 +106,17 @@ async function connectToWhatsApp(instanceId, deviceId) {
             const matchedFlow = flowsToSearch.find(flow => messageText === flow.prefix.toLowerCase());
 
             if (matchedFlow) {
-                await sock.sendMessage(sender, { text: matchedFlow.response });
+                for (const res of matchedFlow.response) {
+                    if (res.type === 'image') {
+                        await sock.sendMessage(sender, {
+                            image: { url: res.content }
+                        });
+                    } else {
+                        await sock.sendMessage(sender, { text: res.content });
+                    }
+                    // Tambahkan jeda singkat antar pesan
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
                 console.log(`[${instanceId}] Bot response sent to ${sender} for prefix "${matchedFlow.prefix}"`);
 
                 // Periksa apakah alur ini memiliki turunan
