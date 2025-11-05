@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify OTP</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #121212; color: white; margin: 0; }
+        .container { background: #1e1e1e; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); width: 100%; max-width: 400px; text-align: center; }
+        h1 { margin-bottom: 1rem; }
+        .form-group { margin-bottom: 1rem; }
+        label { display: block; margin-bottom: 0.5rem; }
+        input { width: 100%; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2c2c2c; color: white; box-sizing: border-box; text-align: center; font-size: 1.2rem; }
+        button { width: 100%; padding: 0.75rem; border: none; border-radius: 4px; background-color: #007bff; color: white; font-size: 1rem; cursor: pointer; }
+        .error { color: #ff4d4d; margin-top: 1rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Check your WhatsApp</h1>
+        <p>We've sent a 6-digit OTP to your number. Please enter it below.</p>
+        <% if (typeof error !== 'undefined' && error) { %>
+            <p class="error"><%= error %></p>
+        <% } %>
+        <form action="/api/v1/auth/verify-otp" method="POST">
+            <input type="hidden" name="userId" value="<%= userId %>">
+            <div class="form-group">
+                <label for="otp">OTP Code</label>
+                <input type="text" id="otp" name="otp" maxlength="6" required>
+            </div>
+            <button type="submit">Verify & Login</button>
+        </form>
+    </div>
+</body>
+</html>
