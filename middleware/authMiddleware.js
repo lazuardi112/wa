@@ -33,4 +33,15 @@ const redirectIfLoggedIn = (req, res, next) => {
     next();
 };
 
-module.exports = { protect, admin, redirectIfLoggedIn };
+const isAdmin = (req, res, next) => {
+    if (req.session.admin && req.session.admin.isLoggedIn) {
+        return next();
+    }
+    // For API routes, send a JSON error. For views, redirect.
+    if (req.accepts('html')) {
+        return res.redirect('/admin/login');
+    }
+    return res.status(403).json({ message: 'Forbidden: Admins only.' });
+};
+
+module.exports = { protect, admin, redirectIfLoggedIn, isAdmin };
