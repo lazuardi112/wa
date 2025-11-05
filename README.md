@@ -1,24 +1,13 @@
-# WhatsApp Gateway SaaS Platform
+# WhatsApp Gateway SaaS - Edisi Node.js Murni
 
-Platform SaaS (Software as a Service) WhatsApp Gateway lengkap yang dibangun dengan tumpukan teknologi modern. Proyek ini siap pakai, menampilkan arsitektur monorepo yang terintegrasi, database MySQL, dan antarmuka pengguna yang modern, fungsional, dan responsif.
+Platform SaaS (Software as a Service) WhatsApp Gateway lengkap yang dibangun murni dengan Node.js dan Express. Proyek ini sangat sederhana, menampilkan arsitektur monolitik, database MySQL, dan antarmuka pengguna yang dirender server menggunakan EJS.
 
 ## Fitur Utama
 
--   **Backend Kuat**: Dibangun dengan Node.js, Express, dan Sequelize (MySQL) untuk kinerja yang andal dan skalabel.
--   **Frontend Fungsional & Modern**: Antarmuka pengguna yang dibangun dengan React.js dan Material-UI, menyediakan pengalaman yang bersih dan responsif di desktop dan seluler.
--   **Otentikasi Berbasis Sesi**: Sistem login yang aman menggunakan sesi yang disimpan di database, dengan alur terpisah untuk pengguna dan admin.
--   **Verifikasi OTP via WhatsApp**: Alur pendaftaran pengguna yang aman mewajibkan verifikasi nomor WhatsApp melalui OTP yang dikirim dari perangkat yang dikonfigurasi admin.
--   **Manajemen Device Real-time**:
-    -   Tambah dan hapus perangkat WhatsApp.
-    -   Lihat status koneksi (`Connected`, `Disconnected`, dll.) secara real-time.
-    -   **Tampilkan QR Code** langsung di dasbor untuk menghubungkan perangkat baru.
--   **Fitur Pengiriman Pesan**:
-    -   Kirim pesan tunggal ke satu nomor.
-    -   Kirim pesan **Broadcast** ke banyak nomor sekaligus.
--   **Panel Admin Fungsional**:
-    -   Dasbor admin terpisah dengan login khusus.
-    -   Halaman pengaturan untuk menghubungkan dan mengelola perangkat pengirim OTP.
--   **Arsitektur Terintegrasi**: Dikonfigurasi untuk pengembangan (2 port) dan produksi (port tunggal, 8080), disederhanakan dengan skrip `npm`.
+-   **Backend & Frontend Terpadu**: Dibangun sepenuhnya dengan Node.js, Express, dan EJS untuk kesederhanaan dan kinerja.
+-   **Tanpa Proses Build**: Tidak ada langkah kompilasi atau build yang rumit. Cukup instal dependensi dan jalankan.
+-   **Otentikasi Berbasis Sesi**: Sistem login yang aman menggunakan sesi yang disimpan di database.
+-   **Fungsionalitas API Tetap Ada**: Semua rute API asli (`/api/v1/...`) tetap berfungsi untuk integrasi eksternal.
 
 ---
 
@@ -31,7 +20,7 @@ Platform SaaS (Software as a Service) WhatsApp Gateway lengkap yang dibangun den
 
 ---
 
-## 🚀 Panduan Instalasi & Konfigurasi
+## 🚀 Panduan Instalasi & Konfigurasi Cepat
 
 ### 1. Clone Repositori
 
@@ -40,33 +29,27 @@ git clone <URL_REPOSITORI_ANDA>
 cd <NAMA_FOLDER_PROYEK>
 ```
 
-### 2. Konfigurasi Database
+### 2. Konfigurasi Database & Environment
 
 1.  Buat database baru di MySQL Anda.
     ```sql
     CREATE DATABASE wagateway;
     ```
-
-### 3. Konfigurasi Environment
-
-Proyek ini menggunakan satu file `.env` terpusat di direktori **root** untuk mengelola semua variabel lingkungan.
-
-1.  Buat salinan dari `.env.example`:
+2.  Proyek ini menggunakan satu file `.env` di direktori **root**. Cukup salin file contoh dan edit jika perlu. **Kredensial default sudah diisi.**
     ```bash
     cp .env.example .env
     ```
-2.  Buka file `.env` yang baru dibuat dan isi dengan konfigurasi Anda. File ini berisi semua yang diperlukan untuk backend (kredensial database) dan frontend. Pastikan untuk mengatur `DB_PASSWORD` dan `SESSION_SECRET` Anda.
 
-### 4. Instal Dependensi
+### 3. Instal Dependensi
 
-Jalankan dari **direktori root** proyek. Ini akan menginstal semuanya.
+Jalankan dari **direktori root** proyek. Ini akan menginstal dependensi backend.
 ```bash
-npm run install-all
+npm install
 ```
 
-### 5. Jalankan Migrasi Database & Seeder
+### 4. Jalankan Migrasi Database & Seeder
 
-Jalankan perintah berikut dari **direktori root** untuk membuat struktur tabel dan menambahkan akun admin default.
+Jalankan perintah berikut dari **direktori root** untuk membuat tabel dan akun admin default.
 ```bash
 # 1. Membuat struktur tabel
 npm run db:migrate --prefix backend
@@ -82,30 +65,11 @@ npm run db:seed --prefix backend
 
 ## ▶️ Menjalankan Aplikasi
 
-Anda memiliki dua mode untuk menjalankan aplikasi:
-
-### Mode Pengembangan (Development)
-
-Mode ini sangat ideal untuk pengembangan, dengan hot-reloading untuk backend dan frontend.
-```bash
-npm run dev
-```
--   **Backend API** akan berjalan di `http://localhost:8080`.
--   **Frontend React** akan berjalan di `http://localhost:3000`.
-
-### Mode Produksi (Production)
-
-Mode ini mengoptimalkan aplikasi untuk kinerja terbaik. Perintah `npm start` yang dijalankan dari direktori **root** akan secara otomatis menangani semuanya:
-1.  **Membangun Frontend**: Menjalankan `npm run build` untuk *frontend*, mengoptimalkan dan memaketkan semua aset React ke dalam direktori `frontend/build`.
-2.  **Menjalankan Server Backend**: Memulai server Node.js dalam mode produksi, yang akan menyajikan *file-file frontend* yang sudah di-*build* dan menangani semua permintaan API.
+Tidak ada lagi mode pengembangan atau produksi yang terpisah. Cukup jalankan perintah start.
 
 ```bash
-# Jalankan dari direktori root proyek
 npm start
 ```
--   **Aplikasi Lengkap** akan dapat diakses di `http://localhost:8080`.
+-   **Aplikasi Lengkap** akan berjalan di `http://localhost:8080`.
 
-Setelah server berjalan, buka URL berikut di browser Anda:
--   **Halaman Login Pengguna**: `http://localhost:8080` atau `http://localhost:8080/login`
--   **Halaman Login Admin**: `http://localhost:8080/admin/login`
--   **Dokumentasi API**: `http://localhost:8080/api-docs`
+Buka `http://localhost:8080` di browser Anda untuk melihat halaman login.

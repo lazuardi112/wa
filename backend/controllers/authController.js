@@ -2,9 +2,7 @@ const db = require('../models');
 const { sendOtp } = require('../services/whatsappService');
 const crypto = require('crypto');
 
-// @desc    Register a new user and send OTP
-// @route   POST /api/v1/auth/register
-// @access  Public
+// ... (registerUser and verifyOtp functions remain the same)
 const registerUser = async (req, res) => {
   const { name, email, password, whatsappNumber } = req.body;
   if (!name || !email || !password || !whatsappNumber) {
@@ -23,14 +21,14 @@ const registerUser = async (req, res) => {
         return res.status(400).json({ message: 'This WhatsApp number is already registered.' });
     }
 
-    const freePackage = await db.Package.findOne({ where: { name: 'Free' } });
+    let freePackage = await db.Package.findOne({ where: { name: 'Free' } });
     if (!freePackage) {
-      await db.Package.create({ name: 'Free', price: 0, durationDays: 9999, maxDevices: 1, apiAccess: false });
+      freePackage = await db.Package.create({ name: 'Free', price: 0, durationDays: 9999, maxDevices: 1, apiAccess: false });
     }
 
     const user = await db.User.create({
       name, email, password, whatsappNumber,
-      packageId: freePackage ? freePackage.id : null,
+      packageId: freePackage.id,
       isVerified: false
     }, { transaction: t });
 
@@ -51,9 +49,6 @@ const registerUser = async (req, res) => {
   }
 };
 
-// @desc    Verify user's OTP and create session
-// @route   POST /api/v1/auth/verify-otp
-// @access  Public
 const verifyOtp = async (req, res) => {
     const { userId, otp } = req.body;
     if(!userId || !otp){
@@ -93,7 +88,8 @@ const verifyOtp = async (req, res) => {
     }
 };
 
-// @desc    Login user
+
+// @desc    Login user (modified for EJS rendering)
 // @route   POST /api/v1/auth/login
 // @access  Public
 const loginUser = async (req, res) => {
@@ -101,10 +97,11 @@ const loginUser = async (req, res) => {
     try {
         const user = await db.User.findOne({ where: { email } });
         if (!user) {
-            return res.status(401).json({ message: 'Invalid email or password' });
+            return res.status(401).render('login', { error: 'Invalid email or password' });
         }
         if (!user.isVerified) {
-            return res.status(403).json({ message: 'Account not verified.', userId: user.id });
+            // In a real app, you might redirect to a dedicated 'verify' page
+            return res.status(403).render('login', { error: 'Account not verified. Please check your WhatsApp for an OTP.' });
         }
         if (await user.matchPassword(password)) {
             // Create a session
@@ -113,31 +110,28 @@ const loginUser = async (req, res) => {
                 name: user.name,
                 role: user.role,
             };
-            res.status(200).json({ message: "Logged in successfully", user: req.session.user });
+            // Redirect to dashboard on successful login
+            res.redirect('/dashboard');
         } else {
-            res.status(401).json({ message: 'Invalid email or password' });
+            res.status(401).render('login', { error: 'Invalid email or password' });
         }
     } catch (error) {
-        res.status(500).json({ message: 'Server Error', error: error.message });
+        res.status(500).render('login', { error: 'Server Error' });
     }
 };
 
-// @desc    Logout user
-// @route   POST /api/v1/auth/logout
-// @access  Private
+// ... (logoutUser and getAuthStatus functions remain the same)
 const logoutUser = (req, res) => {
     req.session.destroy(err => {
         if (err) {
-            return res.status(500).json({ message: 'Could not log out, please try again.' });
+            // If error, redirect to dashboard, user is likely still logged in
+            return res.redirect('/dashboard');
         }
-        res.clearCookie('connect.sid'); // The default session cookie name
-        res.status(200).json({ message: 'Logged out successfully.' });
+        res.clearCookie('connect.sid');
+        res.redirect('/login');
     });
 };
 
-// @desc    Get current user status
-// @route   GET /api/v1/auth/status
-// @access  Public
 const getAuthStatus = (req, res) => {
     if (req.session.user) {
         res.status(200).json({ isAuthenticated: true, user: req.session.user });
@@ -145,6 +139,7 @@ const getAuthStatus = (req, res) => {
         res.status(200).json({ isAuthenticated: false, user: null });
     }
 };
+
 
 module.exports = {
   registerUser,
