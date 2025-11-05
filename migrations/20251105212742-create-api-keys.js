@@ -1,31 +1,24 @@
 'use strict';
-/** @type {import('sequelize-cli').Migration} */
 module.exports = {
-  async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('Devices', {
+  up: async (queryInterface, Sequelize) => {
+    await queryInterface.createTable('ApiKeys', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      instanceId: {
+      key: {
         type: Sequelize.STRING,
         allowNull: false,
         unique: true
       },
-      remark: {
-        type: Sequelize.STRING
-      },
-      status: {
-        type: Sequelize.ENUM('uninitialized', 'connecting', 'connected', 'disconnected', 'waiting_qr'),
-        defaultValue: 'uninitialized'
-      },
       userId: {
         type: Sequelize.INTEGER,
         allowNull: false,
+        unique: true,
         references: {
-          model: 'Users', // This is the table name
+          model: 'Users',
           key: 'id'
         },
         onUpdate: 'CASCADE',
@@ -41,7 +34,7 @@ module.exports = {
       }
     });
   },
-  async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('Devices');
+  down: async (queryInterface, Sequelize) => {
+    await queryInterface.dropTable('ApiKeys');
   }
 };

@@ -3,54 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Settings</title>
+    <title>System Settings</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #1a1a2e; color: white; margin: 0; }
-        .sidebar { position: fixed; width: 250px; height: 100%; background: #16213e; padding: 1rem; }
-        .sidebar h2 { text-align: center; color: #e94560; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #121212; color: white; margin: 0; }
+        .sidebar { position: fixed; width: 250px; height: 100%; background: #1e1e1e; padding: 1rem; }
+        .sidebar h2 { text-align: center; color: #007bff; }
         .sidebar a { display: block; color: white; padding: 1rem; text-decoration: none; border-radius: 4px; }
-        .sidebar a:hover { background: #1f4068; }
+        .sidebar a:hover { background: #333; }
         .main-content { margin-left: 270px; padding: 2rem; }
-        .card { background: #16213e; padding: 1.5rem; border-radius: 8px; }
-        h1 { color: #e94560; }
+        h1, h2 { color: #007bff; }
+        .card { background: #1e1e1e; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; }
         .form-group { margin-bottom: 1rem; }
         label { display: block; margin-bottom: 0.5rem; }
-        input { width: 100%; max-width: 500px; padding: 0.75rem; border-radius: 4px; border: 1px solid #0f3460; background: #1f4068; color: white; box-sizing: border-box; }
-        button { padding: 0.75rem 1.5rem; border: none; border-radius: 4px; background-color: #e94560; color: white; font-size: 1rem; cursor: pointer; }
-        button:hover { background-color: #c73850; }
-        .message { padding: 1rem; border-radius: 4px; margin-bottom: 1rem; }
-        .message.success { background-color: #28a745; color: white; }
+        input, select { width: 100%; max-width: 600px; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2c2c2c; color: white; box-sizing: border-box; }
+        button { padding: 0.75rem 1.5rem; border: none; border-radius: 4px; background-color: #007bff; color: white; font-size: 1rem; cursor: pointer; }
+        .message { background-color: #28a745; color: white; padding: 1rem; border-radius: 4px; margin-bottom: 1rem; }
     </style>
 </head>
 <body>
-    <div class="sidebar">
-        <h2>Admin Panel</h2>
-        <a href="/admin/dashboard">Dashboard</a>
-        <a href="/admin/settings">Settings</a>
-        <a href="/admin/users">User Management</a>
-        <a href="/logout">Logout</a>
-    </div>
+    <%- include('sidebar') %>
     <div class="main-content">
         <h1>System Settings</h1>
+
+        <% if (message) { %>
+            <div class="message"><%= message %></div>
+        <% } %>
+
         <div class="card">
-            <% if (typeof message !== 'undefined' && message) { %>
-                <div class="message success"><%= message %></div>
-            <% } %>
+            <h2>Midtrans Payment Gateway</h2>
             <form action="/api/v1/admin/settings" method="POST">
-                <h2>Midtrans Configuration</h2>
                 <div class="form-group">
-                    <label for="midtransServerKey">Midtrans Server Key</label>
-                    <input type="password" id="midtransServerKey" name="midtransServerKey" value="<%= settings.midtransServerKey || '' %>">
+                    <label for="midtransServerKey">Server Key</label>
+                    <input type="text" id="midtransServerKey" name="midtransServerKey" value="<%= settings.midtransServerKey %>">
                 </div>
                 <div class="form-group">
-                    <label for="midtransClientKey">Midtrans Client Key</label>
-                    <input type="text" id="midtransClientKey" name="midtransClientKey" value="<%= settings.midtransClientKey || '' %>">
+                    <label for="midtransClientKey">Client Key</label>
+                    <input type="text" id="midtransClientKey" name="midtransClientKey" value="<%= settings.midtransClientKey %>">
                 </div>
                 <div class="form-group">
-                    <label for="midtransNotificationUrl">Notification URL</label>
-                    <input type="text" id="midtransNotificationUrl" name="midtransNotificationUrl" value="<%= settings.midtransNotificationUrl || '' %>">
+                    <label for="midtransNotificationUrl">Notification URL (Override)</label>
+                    <input type="text" id="midtransNotificationUrl" name="midtransNotificationUrl" value="<%= settings.midtransNotificationUrl %>" placeholder="Optional: leave blank to use default">
                 </div>
-                <button type="submit">Save Settings</button>
+                <button type="submit">Save Midtrans Settings</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2>System Devices</h2>
+            <form action="/api/v1/admin/settings/otp-device" method="POST">
+                <div class="form-group">
+                    <label for="otpDeviceId">Global OTP Device</label>
+                    <select id="otpDeviceId" name="otpDeviceId" required>
+                        <option value="">Select a device...</option>
+                        <% allDevices.forEach(device => { %>
+                            <option value="<%= device.id %>" <%= settings.otpDeviceId == device.id ? 'selected' : '' %>>
+                                ID: <%= device.id %> | Remark: <%= device.remark %> | User: <%= device.user.email %>
+                            </option>
+                        <% }); %>
+                    </select>
+                    <small>This device will be used to send all OTP messages for new user registrations.</small>
+                </div>
+                <button type="submit">Save OTP Device</button>
             </form>
         </div>
     </div>

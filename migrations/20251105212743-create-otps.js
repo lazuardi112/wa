@@ -1,19 +1,20 @@
 'use strict';
-
-/** @type {import('sequelize-cli').Migration} */
 module.exports = {
-  async up (queryInterface, Sequelize) {
-    await queryInterface.createTable('ApiKeys', {
+  up: async (queryInterface, Sequelize) => {
+    await queryInterface.createTable('Otps', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
+      code: {
+        type: Sequelize.STRING,
+        allowNull: false
+      },
       userId: {
         type: Sequelize.INTEGER,
         allowNull: false,
-        unique: true, // Each user has only one API key
         references: {
           model: 'Users',
           key: 'id'
@@ -21,10 +22,9 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      key: {
-        type: Sequelize.STRING,
-        allowNull: false,
-        unique: true
+      expiresAt: {
+        type: Sequelize.DATE,
+        allowNull: false
       },
       createdAt: {
         allowNull: false,
@@ -36,8 +36,7 @@ module.exports = {
       }
     });
   },
-
-  async down (queryInterface, Sequelize) {
-    await queryInterface.dropTable('ApiKeys');
+  down: async (queryInterface, Sequelize) => {
+    await queryInterface.dropTable('Otps');
   }
 };

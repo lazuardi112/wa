@@ -1,21 +1,24 @@
 'use strict';
-/** @type {import('sequelize-cli').Migration} */
 module.exports = {
-  async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('Otps', {
+  up: async (queryInterface, Sequelize) => {
+    await queryInterface.createTable('Devices', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      code: {
+      instanceId: {
         type: Sequelize.STRING,
-        allowNull: false
+        allowNull: false,
+        unique: true
       },
-      expiresAt: {
-        type: Sequelize.DATE,
-        allowNull: false
+      remark: {
+        type: Sequelize.STRING
+      },
+      status: {
+        type: Sequelize.STRING,
+        defaultValue: 'disconnected'
       },
       userId: {
         type: Sequelize.INTEGER,
@@ -25,8 +28,7 @@ module.exports = {
           key: 'id'
         },
         onUpdate: 'CASCADE',
-        onDelete: 'CASCADE',
-        unique: true
+        onDelete: 'CASCADE'
       },
       createdAt: {
         allowNull: false,
@@ -38,7 +40,7 @@ module.exports = {
       }
     });
   },
-  async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('Otps');
+  down: async (queryInterface, Sequelize) => {
+    await queryInterface.dropTable('Devices');
   }
 };

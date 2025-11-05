@@ -7,7 +7,8 @@ const {
     showSettingsPage,
     saveSettings,
     showUsersPage,
-    toggleUserBlock
+    toggleUserBlock,
+    showTransactionsPage
 } = require('../controllers/adminController');
 
 // Middleware to protect admin routes
@@ -26,9 +27,11 @@ router.post('/login', loginAdmin); // This is an API route but handles form subm
 router.get('/dashboard', isAdmin, showDashboard);
 router.get('/settings', isAdmin, showSettingsPage);
 router.get('/users', isAdmin, showUsersPage);
+router.get('/transactions', isAdmin, showTransactionsPage);
 
 // Protected admin API routes
 router.post('/settings', isAdmin, saveSettings);
+router.post('/settings/otp-device', isAdmin, saveOtpDevice);
 router.post('/users/:id/toggle-block', isAdmin, toggleUserBlock);
 
 module.exports = router;

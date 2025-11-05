@@ -90,11 +90,21 @@ const renderApiDocsPage = async (req, res) => {
 // @access  Private
 const renderSubscribePage = async (req, res) => {
     try {
-        // const clientKeySetting = await db.Setting.findOne({ where: { key: 'midtransClientKey' } }); // Removed temporarily
-        // if (!clientKeySetting?.value) {
-        //     return res.status(500).send('Midtrans Client Key is not configured by the admin.');
-        // }
-        res.render('subscribe', { midtransClientKey: 'DUMMY_CLIENT_KEY' }); // Hardcoded temporarily
+        const clientKeySetting = await db.Setting.findOne({ where: { key: 'midtransClientKey' } });
+        if (!clientKeySetting?.value) {
+            // Provide a more user-friendly error page or message
+            return res.status(500).send('Error: Midtrans Client Key is not configured by the admin. Please contact support.');
+        }
+
+        const packages = await db.Package.findAll();
+        const user = await db.User.findByPk(req.session.user.id);
+        const currentPackage = await db.Package.findByPk(user.packageId || 1); // Default to 1 if null
+
+        res.render('subscribe', {
+            midtransClientKey: clientKeySetting.value,
+            packages,
+            currentPackage
+        });
     } catch (error) {
         console.error('Subscribe Page Error:', error);
         res.status(500).send('Error loading subscription page.');
