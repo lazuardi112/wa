@@ -59,29 +59,30 @@ const showDashboard = async (req, res) => {
 // @access  Private (Admin)
 const showSettingsPage = async (req, res) => {
     try {
-        const [serverKey, clientKey, notificationUrl, otpDeviceId, allDevices] = await Promise.all([
-            db.Setting.findOne({ where: { key: 'midtransServerKey' } }),
-            db.Setting.findOne({ where: { key: 'midtransClientKey' } }),
-            db.Setting.findOne({ where: { key: 'midtransNotificationUrl' } }),
-            db.Setting.findOne({ where: { key: 'otpDeviceId' } }),
-            db.Device.findAll({
-                where: { status: 'connected' },
-                include: [{
-                    model: db.User,
-                    as: 'user', // Make sure the alias matches the association
-                    attributes: ['id', 'email'] // Only fetch necessary attributes
-                }]
-            })
+        const [settingsData, allDevices, allUsers] = await Promise.all([
+            db.Setting.findAll(),
+            db.Device.findAll({ where: { status: 'connected' } }),
+            db.User.findAll({ attributes: ['id', 'email'] })
         ]);
 
-        const settings = {
-            midtransServerKey: serverKey?.value || '',
-            midtransClientKey: clientKey?.value || '',
-            midtransNotificationUrl: notificationUrl?.value || '',
-            otpDeviceId: otpDeviceId?.value || '',
-        };
+        // Create a map for easy user lookup
+        const userMap = allUsers.reduce((map, user) => {
+            map[user.id] = user.email;
+            return map;
+        }, {});
 
-        res.render('admin/settings', { settings, allDevices, message: req.query.message || '' });
+        // Format settings into a simple object
+        const settings = settingsData.reduce((acc, setting) => {
+            acc[setting.key] = setting.value;
+            return acc;
+        }, {});
+
+        res.render('admin/settings', {
+            settings,
+            allDevices,
+            userMap, // Pass the user map to the view
+            message: req.query.message || ''
+        });
     } catch (error) {
         console.error("Admin Settings Page Error:", error);
         res.status(500).send("Error fetching settings");
