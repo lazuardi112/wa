@@ -4,7 +4,7 @@
 
 // Modul dan konfigurasi environment
 const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
+require('dotenv').config();
 
 const express = require('express');
 const http = require('http');
@@ -239,10 +239,7 @@ app.use('/api/v1/payment', require('./routes/paymentRoutes'));
 // =====================================================
 // Socket.IO Initialization
 // =====================================================
-const io = initIO(server);
-io.on('connection', (socket) => {
-  console.log('A user connected via WebSocket:', socket.id);
-});
+initIO(server);
 
 // =====================================================
 // Jalankan Server
