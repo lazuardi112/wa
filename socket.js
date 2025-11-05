@@ -1,21 +1,16 @@
-// socket.js
-let io;
 
-const initIO = (httpServer) => {
-  io = require('socket.io')(httpServer, {
-    cors: {
-      origin: "*", // Adjust for your frontend URL in production
-      methods: ["GET", "POST"]
-    }
+module.exports = (io) => {
+  io.on('connection', (socket) => {
+    console.log('A user connected via Socket.IO');
+
+    // Listen for a join event from the client
+    socket.on('join', (room) => {
+      console.log(`Socket ${socket.id} is joining room: ${room}`);
+      socket.join(room);
+    });
+
+    socket.on('disconnect', () => {
+      console.log('User disconnected from Socket.IO');
+    });
   });
-  return io;
 };
-
-const getIO = () => {
-  if (!io) {
-    throw new Error("Socket.io not initialized!");
-  }
-  return io;
-};
-
-module.exports = { initIO, getIO };
