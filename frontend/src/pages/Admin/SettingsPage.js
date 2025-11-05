@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
     Box, Typography, Button, Paper, Alert, CircularProgress,
-    Dialog, DialogTitle, DialogContent
+    Dialog, DialogTitle, DialogContent, TextField
 } from '@mui/material';
 import io from 'socket.io-client';
 import { QRCodeSVG } from 'qrcode.react'; // Corrected import
@@ -74,6 +74,24 @@ const SettingsPage = () => {
                 <Typography variant="caption" display="block" sx={{ mt: 1 }}>
                     Click to connect a WhatsApp device that will be used to send OTPs to new users.
                 </Typography>
+            </Paper>
+
+            {/* General Settings Section */}
+            <Paper sx={{ p: 2, mt: 3 }}>
+                <Typography variant="h6">General Settings</Typography>
+                <Box component="form" noValidate autoComplete="off" sx={{ mt: 2 }}>
+                    <TextField
+                        fullWidth
+                        label="Application Base URL"
+                        variant="outlined"
+                        defaultValue="http://localhost:8080"
+                        helperText="The main URL where your application is hosted."
+                        sx={{ mb: 2 }}
+                    />
+                    <Button variant="contained" color="primary">
+                        Save Settings
+                    </Button>
+                </Box>
             </Paper>
 
             <Dialog open={modalOpen} onClose={() => setModalOpen(false)}>
