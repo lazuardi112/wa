@@ -8,6 +8,20 @@ const initIO = (httpServer) => {
       methods: ["GET", "POST"]
     }
   });
+
+  io.on('connection', (socket) => {
+    console.log('A user connected via WebSocket:', socket.id);
+
+    socket.on('join_room', (sessionId) => {
+      console.log(`Socket ${socket.id} is joining room ${sessionId}`);
+      socket.join(sessionId);
+    });
+
+    socket.on('disconnect', () => {
+      console.log('User disconnected:', socket.id);
+    });
+  });
+
   return io;
 };
 
