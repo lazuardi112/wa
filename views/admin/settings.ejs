@@ -57,7 +57,7 @@
                         <option value="">Select a device...</option>
                         <% allDevices.forEach(device => { %>
                             <option value="<%= device.id %>" <%= settings.otpDeviceId == device.id ? 'selected' : '' %>>
-                                ID: <%= device.id %> | Remark: <%= device.remark %> | User: <%= device.user.email %>
+                                ID: <%= device.id %> | Remark: <%= device.remark %> | User: <%= userMap[device.userId] || 'N/A' %>
                             </option>
                         <% }); %>
                     </select>
