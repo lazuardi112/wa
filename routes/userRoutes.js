@@ -7,6 +7,6 @@ const { protect } = require('../middleware/authMiddleware'); // Assuming you hav
 // For EJS app, session-based protection is handled by 'isAuthenticated' in server.js.
 // We'll assume the API routes might still be protected by a different mechanism for external tools.
 
-router.post('/generate-apikey', generateApiKey);
+router.post('/generate-apikey', protect, generateApiKey);
 
 module.exports = router;

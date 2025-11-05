@@ -1,72 +1,86 @@
 # WhatsApp Gateway SaaS Platform
 
-Platform ini memungkinkan Anda untuk menghubungkan perangkat WhatsApp Anda dan mengirim pesan melalui API.
+This is a comprehensive, multi-user SaaS platform that allows users to connect their WhatsApp accounts and send messages programmatically via API or through a user-friendly web interface. It includes a full-featured admin panel for managing users, transactions, and system settings.
 
-## Fitur
+## Features
 
-*   Manajemen Perangkat (Tambah, Hapus, Sambungkan Ulang)
-*   Mengirim Pesan Teks melalui API
-*   Otentikasi Pengguna & Admin
-*   Panel Pengguna & Admin
-*   Sistem Langganan (Integrasi Midtrans)
+### User Features
+- **Device Management**: Connect multiple WhatsApp devices by scanning a QR code.
+- **Advanced Messaging**: Send messages via a tabbed UI for single text, media (image/document) uploads, and bulk messaging.
+- **Complex Bot Builder**:
+    - Create automated responses based on prefix keywords.
+    - Build complex, branching conversation flows using a parent-child structure.
+    - Bot responses can be a sequence of multiple messages (text and images).
+    - Toggle bots on/off, edit, and delete them.
+- **API Access**: Generate an API key to send messages programmatically.
+- **Subscription System**: Tiered access with a Free plan and upgradable Premium plan.
+- **Transaction History**: View a complete history of all payments.
 
-## Prasyarat
+### Admin Features
+- **Admin Dashboard**: At-a-glance statistics of the platform's health (total users, revenue, etc.).
+- **User Management**: View a list of all registered users.
+- **Transaction Management**: View a complete history of all transactions on the platform.
+- **System Settings**:
+    - Configure Midtrans API keys (Server & Client).
+    - Set a notification URL override for Midtrans webhooks.
+    - Designate a global OTP device for sending verification codes.
 
-*   Node.js (v16 atau lebih baru)
-*   MySQL Server
+## Prerequisites
 
-## Instalasi & Setup
+- Node.js (v16 or later)
+- MySQL Server
 
-1.  **Clone repositori:**
+## Installation & Setup
+
+1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/username/repo.git
-    cd repo
+    git clone https://github.com/your-username/your-repo.git
+    cd your-repo
     ```
 
-2.  **Buat file `.env`:**
-    Salin file `.env.example` ke `.env` baru.
+2.  **Create `.env` file:**
+    Copy the `.env.example` file to a new `.env` file and fill in your environment variables.
     ```bash
     cp .env.example .env
     ```
-    Sesuaikan variabel di dalam `.env` dengan konfigurasi database dan environment Anda.
 
-    *   `DB_HOST`: Host database MySQL Anda
-    *   `DB_USER`: Nama pengguna database
-    *   `DB_PASSWORD`: Kata sandi database
-    *   `DB_NAME`: Nama database (pastikan Anda sudah membuatnya)
-    *   `SESSION_SECRET`: Kunci rahasia acak untuk sesi
+    **Required `.env` Variables:**
+    - `DB_HOST`: Your MySQL database host.
+    - `DB_USER`: Your MySQL username.
+    - `DB_PASSWORD`: Your MySQL password.
+    - `DB_NAME`: Your database name (must be created beforehand).
+    - `SESSION_SECRET`: A long, random string for securing sessions.
+    - `MIDTRANS_IS_PRODUCTION`: `false` for sandbox, `true` for production.
+    - `MIDTRANS_SERVER_KEY`: Your Midtrans Server Key.
+    - `MIDTRANS_CLIENT_KEY`: Your Midtrans Client Key.
 
-3.  **Install dependensi:**
-    Jalankan perintah berikut dari direktori root proyek.
+    **Optional `.env` Variables:**
+    - `ADMIN_USERNAME`: The username for the admin login (defaults to `admin`).
+    - `ADMIN_PASSWORD`: The password for the admin login (defaults to `admin123`).
+
+3.  **Install dependencies:**
     ```bash
     npm install
     ```
-    > **Catatan Penting:** Jika Anda mengalami masalah koneksi, pastikan Anda menggunakan versi Baileys terbaru dengan menjalankan:
-    > ```bash
-    > npm install @whiskeysockets/baileys@latest
-    > ```
 
-4.  **Jalankan Migrasi & Seeder Database:**
-    Perintah ini akan membuat tabel yang diperlukan dan mengisi data awal (seperti akun admin default).
+4.  **Run Database Migrations & Seeders:**
+    This command will create all necessary tables and populate the `Packages` table with default "Free" and "Premium" plans.
     ```bash
     npm run db:migrate
     npm run db:seed
     ```
-    > **Catatan:** Akun admin default adalah `admin@example.com` dengan kata sandi `admin123`.
 
-5.  **Jalankan Aplikasi:**
+5.  **Run the Application:**
     ```bash
     npm start
     ```
+    The application will be running at `http://localhost:8080`.
 
-Aplikasi sekarang akan berjalan di `http://localhost:8080`.
+## Getting Started
 
-## Cara Kerja
+1.  **Admin Login**: Navigate to `http://localhost:8080/admin/login` and log in with the admin credentials.
+2.  **Configure Settings**: In the admin panel, go to **Settings** and configure your Midtrans keys and select a device to act as the global OTP sender (you will need to register a normal user and connect a device first to do this).
+3.  **User Registration**: You can now register a new user account from the main page. You will receive an OTP on WhatsApp from the device you configured.
+4.  **Connect Device**: Log in as the new user, go to the **Devices** page, and scan the QR code.
+5.  **Explore**: You can now use the messaging features, build bots, or generate an API key from the **API Docs** page.
 
-1.  **Daftar Akun Baru**: Buka aplikasi di browser dan buat akun baru.
-2.  **Login**: Masuk ke akun Anda.
-3.  **Tambah Perangkat**:
-    *   Buka halaman "Devices".
-    *   Klik "Add New Device" dan beri nama.
-    *   Pindai kode QR yang muncul menggunakan aplikasi WhatsApp di ponsel Anda (Link a device).
-4.  **Kirim Pesan**: Gunakan halaman "Messaging" atau "API Docs" untuk mulai mengirim pesan dari perangkat yang terhubung.

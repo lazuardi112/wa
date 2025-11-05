@@ -1,7 +1,6 @@
 'use strict';
-/** @type {import('sequelize-cli').Migration} */
 module.exports = {
-  async up(queryInterface, Sequelize) {
+  up: async (queryInterface, Sequelize) => {
     await queryInterface.createTable('Users', {
       id: {
         allowNull: false,
@@ -47,13 +46,12 @@ module.exports = {
       packageExpiresAt: {
         type: Sequelize.DATE
       },
-      apiKey: {
-        type: Sequelize.STRING,
-        unique: true
+      messageCount: {
+        type: Sequelize.INTEGER,
+        defaultValue: 0
       },
-      apiAccessStatus: {
-        type: Sequelize.ENUM('none', 'requested', 'approved'),
-        defaultValue: 'none'
+      lastResetDate: {
+        type: Sequelize.DATE
       },
       createdAt: {
         allowNull: false,
@@ -65,7 +63,7 @@ module.exports = {
       }
     });
   },
-  async down(queryInterface, Sequelize) {
+  down: async (queryInterface, Sequelize) => {
     await queryInterface.dropTable('Users');
   }
 };

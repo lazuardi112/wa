@@ -1,29 +1,12 @@
 'use strict';
-/** @type {import('sequelize-cli').Migration} */
 module.exports = {
-  async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('Transactions', {
+  up: async (queryInterface, Sequelize) => {
+    await queryInterface.createTable('BotFlows', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
-      },
-      orderId: {
-        type: Sequelize.STRING,
-        allowNull: false,
-        unique: true
-      },
-      amount: {
-        type: Sequelize.INTEGER,
-        allowNull: false
-      },
-      status: {
-        type: Sequelize.ENUM('pending', 'success', 'failed', 'expired'),
-        defaultValue: 'pending'
-      },
-      paymentGatewayData: {
-        type: Sequelize.JSON
       },
       userId: {
         type: Sequelize.INTEGER,
@@ -35,15 +18,36 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      packageId: {
+      deviceId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'Packages',
+          model: 'Devices',
           key: 'id'
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
+      },
+      prefix: {
+        type: Sequelize.STRING,
+        allowNull: false
+      },
+      response: {
+        type: Sequelize.JSON,
+        allowNull: false
+      },
+      isEnabled: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: true
+      },
+      parentId: {
+        type: Sequelize.INTEGER,
+        references: {
+          model: 'BotFlows',
+          key: 'id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'SET NULL'
       },
       createdAt: {
         allowNull: false,
@@ -55,7 +59,7 @@ module.exports = {
       }
     });
   },
-  async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('Transactions');
+  down: async (queryInterface, Sequelize) => {
+    await queryInterface.dropTable('BotFlows');
   }
 };

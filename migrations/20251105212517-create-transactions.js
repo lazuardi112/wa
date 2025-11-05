@@ -1,14 +1,28 @@
 'use strict';
-
-/** @type {import('sequelize-cli').Migration} */
 module.exports = {
-  async up (queryInterface, Sequelize) {
-    await queryInterface.createTable('Subscriptions', {
+  up: async (queryInterface, Sequelize) => {
+    await queryInterface.createTable('Transactions', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
+      },
+      orderId: {
+        type: Sequelize.STRING,
+        allowNull: false,
+        unique: true
+      },
+      amount: {
+        type: Sequelize.INTEGER,
+        allowNull: false
+      },
+      status: {
+        type: Sequelize.ENUM('pending', 'success', 'failed', 'expired'),
+        defaultValue: 'pending'
+      },
+      paymentGatewayData: {
+        type: Sequelize.JSON
       },
       userId: {
         type: Sequelize.INTEGER,
@@ -31,13 +45,7 @@ module.exports = {
         onDelete: 'CASCADE'
       },
       expiresAt: {
-        type: Sequelize.DATE,
-        allowNull: false
-      },
-      midtransOrderId: {
-        type: Sequelize.STRING,
-        allowNull: true,
-        unique: true
+        type: Sequelize.DATE
       },
       createdAt: {
         allowNull: false,
@@ -49,8 +57,7 @@ module.exports = {
       }
     });
   },
-
-  async down (queryInterface, Sequelize) {
-    await queryInterface.dropTable('Subscriptions');
+  down: async (queryInterface, Sequelize) => {
+    await queryInterface.dropTable('Transactions');
   }
 };

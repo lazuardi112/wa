@@ -1,18 +1,46 @@
 const midtransClient = require('midtrans-client');
 const db = require('../models');
-const crypto = require('crypto');
 
-// Initialize Midtrans Snap client
-const snap = new midtransClient.Snap({
-    isProduction: process.env.MIDTRANS_IS_PRODUCTION === 'true',
-    serverKey: process.env.MIDTRANS_SERVER_KEY,
-    clientKey: process.env.MIDTRANS_CLIENT_KEY,
-});
+// Helper function to get Midtrans settings from the database
+const getMidtransConfig = async () => {
+    try {
+        const serverKey = await db.Setting.findOne({ where: { key: 'midtransServerKey' } });
+        const clientKey = await db.Setting.findOne({ where: { key: 'midtransClientKey' } });
+
+        if (!serverKey?.value || !clientKey?.value) {
+            console.warn("Midtrans keys are not configured in the admin settings.");
+            // Fallback to environment variables if settings are not in DB
+            return {
+                isProduction: process.env.MIDTRANS_IS_PRODUCTION === 'true',
+                serverKey: process.env.MIDTRANS_SERVER_KEY,
+                clientKey: process.env.MIDTRANS_CLIENT_KEY,
+            };
+        }
+
+        return {
+            isProduction: process.env.MIDTRANS_IS_PRODUCTION === 'true', // Still use env for production flag
+            serverKey: serverKey.value,
+            clientKey: clientKey.value,
+        };
+    } catch (error) {
+        console.error("Could not fetch Midtrans config from DB, falling back to ENV.", error);
+        // Fallback in case of DB error
+        return {
+            isProduction: process.env.MIDTRANS_IS_PRODUCTION === 'true',
+            serverKey: process.env.MIDTRANS_SERVER_KEY,
+            clientKey: process.env.MIDTRANS_CLIENT_KEY,
+        };
+    }
+};
+
 
 /**
  * Create a new Midtrans Snap transaction.
  */
 const createTransaction = async (userId, orderId, amount) => {
+    const config = await getMidtransConfig();
+    const snap = new midtransClient.Snap(config);
+
     const user = await db.User.findByPk(userId);
     if (!user) {
         throw new Error('User not found');
@@ -39,19 +67,19 @@ const createTransaction = async (userId, orderId, amount) => {
 
 /**
  * Handle incoming Midtrans notifications.
- * Verifies the signature and updates the transaction and user status.
- * @param {object} notification - The notification payload from Midtrans.
  */
 const handleNotification = async (notification) => {
-    // 1. Verify the notification signature (more secure)
-    const statusResponse = await snap.transaction.notification(notification);
+    const config = await getMidtransConfig();
+    const apiClient = new midtransClient.CoreApi(config);
+
+    // Use Core API to verify notification for better security
+    const statusResponse = await apiClient.transaction.notification(notification);
     const orderId = statusResponse.order_id;
     const transactionStatus = statusResponse.transaction_status;
     const fraudStatus = statusResponse.fraud_status;
 
     console.log(`Received notification for orderId ${orderId}: transactionStatus ${transactionStatus}, fraudStatus ${fraudStatus}`);
 
-    // Find the transaction in the database
     const transaction = await db.Transaction.findOne({
         where: { orderId },
         include: ['package', 'user']
@@ -62,25 +90,17 @@ const handleNotification = async (notification) => {
         return;
     }
 
-    // 2. Check transaction status
-    if (transactionStatus == 'capture') {
+    if (transactionStatus == 'capture' || transactionStatus == 'settlement') {
         if (fraudStatus == 'accept') {
-            // Payment successful
             await updateTransactionAndUser(transaction, 'success');
         }
-    } else if (transactionStatus == 'settlement') {
-        // Payment successful
-        await updateTransactionAndUser(transaction, 'success');
     } else if (transactionStatus == 'cancel' || transactionStatus == 'expire' || transactionStatus == 'deny') {
-        // Payment failed
         await transaction.update({ status: 'failed' });
     }
 };
 
 /**
  * Helper function to update transaction and user details on successful payment.
- * @param {object} transaction - The Sequelize transaction object.
- * @param {string} status - The new status for the transaction.
  */
 async function updateTransactionAndUser(transaction, status) {
     if (transaction.status === 'success') {
@@ -92,15 +112,11 @@ async function updateTransactionAndUser(transaction, status) {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + durationDays);
 
-    // Update transaction
     await transaction.update({ status, expiresAt });
 
-    // Update user's package details
     const user = transaction.user;
     user.packageId = transaction.packageId;
     user.packageExpiresAt = expiresAt;
-
-    // Reset message count on upgrade/renewal
     user.messageCount = 0;
     user.lastResetDate = new Date();
 
