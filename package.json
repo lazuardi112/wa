@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@hapi/boom": "^10.0.1",
-    "@whiskeysockets/baileys": "^6.5.0",
+    "@whiskeysockets/baileys": "latest",
     "bcryptjs": "^2.4.3",
     "connect-session-sequelize": "^7.1.7",
     "cors": "^2.8.5",
