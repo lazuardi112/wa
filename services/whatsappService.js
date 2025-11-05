@@ -82,6 +82,42 @@ async function connectToWhatsApp(instanceId, deviceId) {
         const currentState = conversationState.get(sender);
 
         try {
+            // Find the user associated with this device to check their message limit
+            const device = await db.Device.findOne({ where: { id: deviceId } });
+            if (!device) return; // Should not happen if the session is active
+
+            const user = await db.User.findByPk(device.userId);
+            if (!user) return; // Should not happen
+
+            // Find the user's current package
+            let subscription = await db.Transaction.findOne({
+                where: { userId: user.id, status: 'success' },
+                order: [['expiresAt', 'DESC']],
+                include: ['package']
+            });
+
+            if (!subscription || new Date() > new Date(subscription.expiresAt)) {
+                const freePackage = await db.Package.findOne({ where: { name: 'Free' } });
+                subscription = { package: freePackage };
+            }
+
+            const userPackage = subscription.package;
+
+            // Reset daily message count if needed
+            const today = new Date().setHours(0, 0, 0, 0);
+            const lastReset = user.lastResetDate ? new Date(user.lastResetDate).setHours(0, 0, 0, 0) : null;
+            if (lastReset !== today) {
+                user.messageCount = 0;
+                user.lastResetDate = new Date();
+                await user.save();
+            }
+
+            // Check if user has messages left before processing bot logic
+            if (user.messageCount >= userPackage.messageLimit) {
+                console.log(`[${instanceId}] User ${user.email} has reached their message limit. Bot response not sent.`);
+                return; // Stop processing if limit is reached
+            }
+
             let flowsToSearch;
             // Jika pengguna berada dalam percakapan, cari balasan turunan
             if (currentState) {
@@ -106,6 +142,10 @@ async function connectToWhatsApp(instanceId, deviceId) {
             const matchedFlow = flowsToSearch.find(flow => messageText === flow.prefix.toLowerCase());
 
             if (matchedFlow) {
+                // Increment message count before sending
+                user.messageCount += 1;
+                await user.save();
+
                 for (const res of matchedFlow.response) {
                     if (res.type === 'image') {
                         await sock.sendMessage(sender, {
@@ -117,7 +157,7 @@ async function connectToWhatsApp(instanceId, deviceId) {
                     // Tambahkan jeda singkat antar pesan
                     await new Promise(resolve => setTimeout(resolve, 500));
                 }
-                console.log(`[${instanceId}] Bot response sent to ${sender} for prefix "${matchedFlow.prefix}"`);
+                console.log(`[${instanceId}] Bot response sent to ${sender} for prefix "${matchedFlow.prefix}". User message count is now ${user.messageCount}.`);
 
                 // Periksa apakah alur ini memiliki turunan
                 const children = await db.BotFlow.findAll({ where: { parentId: matchedFlow.id, isEnabled: true } });

@@ -8,6 +8,7 @@ const {
     renderApiDocsPage,
     renderSubscribePage,
     renderEditBotPage,
+    renderHistoryPage,
 } = require('../controllers/viewController');
 const { protect, redirectIfLoggedIn } = require('../middleware/authMiddleware');
 
@@ -27,6 +28,7 @@ router.get('/bot', protect, renderBotPage);
 router.get('/bot/edit/:id', protect, renderEditBotPage);
 router.get('/api-docs', protect, renderApiDocsPage);
 router.get('/subscribe', protect, renderSubscribePage);
+router.get('/history', protect, renderHistoryPage);
 
 // Logout
 router.get('/logout', (req, res) => {

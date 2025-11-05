@@ -1,26 +1,23 @@
 const midtransClient = require('midtrans-client');
 const db = require('../models');
+const crypto = require('crypto');
 
+// Initialize Midtrans Snap client
+const snap = new midtransClient.Snap({
+    isProduction: process.env.MIDTRANS_IS_PRODUCTION === 'true',
+    serverKey: process.env.MIDTRANS_SERVER_KEY,
+    clientKey: process.env.MIDTRANS_CLIENT_KEY,
+});
+
+/**
+ * Create a new Midtrans Snap transaction.
+ */
 const createTransaction = async (userId, orderId, amount) => {
-    // Ambil Kunci Server dari database
-    const serverKeySetting = await db.Setting.findOne({ where: { key: 'midtransServerKey' } });
-    if (!serverKeySetting || !serverKeySetting.value) {
-        throw new Error('Midtrans Server Key is not configured in admin settings.');
-    }
-
-    // Buat instance Snap API
-    const snap = new midtransClient.Snap({
-        isProduction: false, // Set to true for production
-        serverKey: serverKeySetting.value,
-    });
-
-    // Ambil detail pengguna
     const user = await db.User.findByPk(userId);
     if (!user) {
-        throw new Error('User not found.');
+        throw new Error('User not found');
     }
 
-    // Definisikan parameter transaksi
     const parameter = {
         transaction_details: {
             order_id: orderId,
@@ -36,45 +33,82 @@ const createTransaction = async (userId, orderId, amount) => {
         },
     };
 
-    // Buat transaksi dan kembalikan token
     const transaction = await snap.createTransaction(parameter);
     return transaction.token;
 };
 
+/**
+ * Handle incoming Midtrans notifications.
+ * Verifies the signature and updates the transaction and user status.
+ * @param {object} notification - The notification payload from Midtrans.
+ */
 const handleNotification = async (notification) => {
-    // Ambil Kunci Server dari database untuk verifikasi
-    const serverKeySetting = await db.Setting.findOne({ where: { key: 'midtransServerKey' } });
-    if (!serverKeySetting || !serverKeySetting.value) {
-        throw new Error('Midtrans Server Key is not configured.');
-    }
+    // 1. Verify the notification signature (more secure)
+    const statusResponse = await snap.transaction.notification(notification);
+    const orderId = statusResponse.order_id;
+    const transactionStatus = statusResponse.transaction_status;
+    const fraudStatus = statusResponse.fraud_status;
 
-    // Buat instance Core API untuk verifikasi
-    const core = new midtransClient.CoreApi({
-        isProduction: false,
-        serverKey: serverKeySetting.value,
+    console.log(`Received notification for orderId ${orderId}: transactionStatus ${transactionStatus}, fraudStatus ${fraudStatus}`);
+
+    // Find the transaction in the database
+    const transaction = await db.Transaction.findOne({
+        where: { orderId },
+        include: ['package', 'user']
     });
 
-    // Verifikasi notifikasi
-    const statusResponse = await core.transaction.notification(notification);
-    const orderId = statusResponse.order_id;
-    const transactionStatus = notification.transaction_status;
-    const fraudStatus = notification.fraud_status;
+    if (!transaction) {
+        console.warn(`Webhook ignored: Transaction with orderId ${orderId} not found.`);
+        return;
+    }
 
-    if (transactionStatus == 'capture' || transactionStatus == 'settlement') {
+    // 2. Check transaction status
+    if (transactionStatus == 'capture') {
         if (fraudStatus == 'accept') {
-            // Find the subscription by order_id
-            const subscription = await db.Subscription.findOne({ where: { midtransOrderId: orderId } });
-            if (subscription) {
-                // Extend the subscription
-                const currentExpiry = new Date(subscription.expiresAt);
-                const newExpiry = new Date(currentExpiry.setMonth(currentExpiry.getMonth() + 1));
-                subscription.expiresAt = newExpiry;
-                await subscription.save();
-                console.log(`Subscription for order ${orderId} extended.`);
-            }
+            // Payment successful
+            await updateTransactionAndUser(transaction, 'success');
         }
+    } else if (transactionStatus == 'settlement') {
+        // Payment successful
+        await updateTransactionAndUser(transaction, 'success');
+    } else if (transactionStatus == 'cancel' || transactionStatus == 'expire' || transactionStatus == 'deny') {
+        // Payment failed
+        await transaction.update({ status: 'failed' });
     }
 };
 
+/**
+ * Helper function to update transaction and user details on successful payment.
+ * @param {object} transaction - The Sequelize transaction object.
+ * @param {string} status - The new status for the transaction.
+ */
+async function updateTransactionAndUser(transaction, status) {
+    if (transaction.status === 'success') {
+        console.log(`Transaction ${transaction.orderId} is already successful. Ignoring update.`);
+        return;
+    }
 
-module.exports = { createTransaction, handleNotification };
+    const durationDays = transaction.package.durationDays;
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + durationDays);
+
+    // Update transaction
+    await transaction.update({ status, expiresAt });
+
+    // Update user's package details
+    const user = transaction.user;
+    user.packageId = transaction.packageId;
+    user.packageExpiresAt = expiresAt;
+
+    // Reset message count on upgrade/renewal
+    user.messageCount = 0;
+    user.lastResetDate = new Date();
+
+    await user.save();
+    console.log(`User ${user.email} successfully subscribed to package ${transaction.package.name}. Expires on ${expiresAt}.`);
+}
+
+module.exports = {
+    createTransaction,
+    handleNotification,
+};
