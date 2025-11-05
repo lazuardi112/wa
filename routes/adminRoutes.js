@@ -1,35 +1,19 @@
 const express = require('express');
 const router = express.Router();
 const {
-    showLoginPage,
     loginAdmin,
-    showDashboard,
-    showSettingsPage,
     saveSettings,
-    showUsersPage,
-    toggleUserBlock,
-    showTransactionsPage
+    saveOtpDevice,
+    toggleUserBlock
 } = require('../controllers/adminController');
+const { isAdmin } = require('../middleware/authMiddleware'); // Assuming isAdmin is in a central middleware file
 
-// Middleware to protect admin routes
-const isAdmin = (req, res, next) => {
-    if (req.session.admin) {
-        return next();
-    }
-    res.redirect('/admin/login');
-};
-
-// Public routes for admin login
-router.get('/login', showLoginPage);
-router.post('/login', loginAdmin); // This is an API route but handles form submission
-
-// Protected admin page routes
-router.get('/dashboard', isAdmin, showDashboard);
-router.get('/settings', isAdmin, showSettingsPage);
-router.get('/users', isAdmin, showUsersPage);
-router.get('/transactions', isAdmin, showTransactionsPage);
+// @desc    Authenticate Admin
+// @route   POST /api/v1/admin/login
+router.post('/login', loginAdmin);
 
 // Protected admin API routes
+// We'll create a new middleware for API protection if needed, for now using session-based isAdmin
 router.post('/settings', isAdmin, saveSettings);
 router.post('/settings/otp-device', isAdmin, saveOtpDevice);
 router.post('/users/:id/toggle-block', isAdmin, toggleUserBlock);

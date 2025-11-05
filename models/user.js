@@ -45,6 +45,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.BOOLEAN,
       defaultValue: false,
     },
+    isBlocked: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
     packageId: {
       type: DataTypes.INTEGER,
       references: {

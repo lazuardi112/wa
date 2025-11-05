@@ -73,7 +73,8 @@ try {
     app.use('/api/v1/bot', require('./routes/botRoutes'));
 
     // View Routes (EJS Rendering)
-    app.use('/', require('./routes/viewRoutes'));
+    app.use('/admin', require('./routes/adminViewRoutes')); // Admin view routes
+    app.use('/', require('./routes/viewRoutes')); // Main user view routes
     console.log("   Routes set up successfully.");
 
     // =====================================================
