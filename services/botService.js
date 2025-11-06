@@ -46,16 +46,10 @@ const processMessage = async (sock, msg, instanceId, deviceId) => {
             include: ['package']
         });
 
-        if (!subscription || new Date() > new Date(subscription.expiresAt)) {
-            const freePackage = await db.Package.findOne({ where: { name: 'Free' } });
-            subscription = { package: freePackage };
-        }
-        const userPackage = subscription.package;
-
         const today = new Date().setHours(0, 0, 0, 0);
         const lastReset = user.lastResetDate ? new Date(user.lastResetDate).setHours(0, 0, 0, 0) : null;
 
-        if (lastReset === today && user.messageCount >= userPackage.messageLimit) {
+        if (lastReset === today && user.messageCount >= user.messageLimit) {
             console.log(`[BotService] User ${user.email} has reached their message limit. Bot response not sent.`);
             return;
         }
@@ -71,8 +65,8 @@ const processMessage = async (sock, msg, instanceId, deviceId) => {
             });
         }
 
-        // Strict prefix matching for all messages
-        const matchedFlow = flowsToSearch.find(flow => messageText === flow.prefix.toLowerCase());
+        // Use prefix matching for all messages
+        const matchedFlow = flowsToSearch.find(flow => messageText.startsWith(flow.prefix.toLowerCase()));
 
         if (matchedFlow) {
             // Update last interaction time to keep the session alive

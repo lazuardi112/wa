@@ -37,11 +37,11 @@
     <div class="stats-grid">
       <div class="card">
         <h3>Active Devices</h3>
-        <p><%= data?.deviceCount || 0 %> / <%= currentPackage.name === 'Premium' ? 'Unlimited' : currentPackage.maxDevices %></p>
+        <p><%= data?.deviceCount || 0 %> / <%= currentPackage.maxDevices.toLocaleString() %></p>
       </div>
       <div class="card">
         <h3>Messages Sent Today</h3>
-        <p><%= data?.messageCount || 0 %> / <%= currentPackage.name === 'Premium' ? 'Unlimited' : currentPackage.messageLimit %></p>
+        <p><%= data?.messageCount || 0 %> / <%= user.messageLimit.toLocaleString() %></p>
       </div>
     </div>
   </div>
