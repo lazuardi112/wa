@@ -15,7 +15,7 @@ module.exports = {
       },
       {
         name: 'Premium',
-        price: 10000,
+        price: 15000,
         durationDays: 30,
         maxDevices: 5,
         messageLimit: 10000,

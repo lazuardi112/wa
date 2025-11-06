@@ -8,6 +8,12 @@ const createSubscription = async (req, res) => {
     try {
         const userId = req.session.user.id;
         const { packageId } = req.params;
+        const { months } = req.body; // Get months from request body
+        const numMonths = parseInt(months, 10) || 1;
+
+        if (numMonths < 1 || numMonths > 12) {
+            return res.status(400).json({ message: 'Invalid number of months.' });
+        }
 
         const packageToBuy = await db.Package.findByPk(packageId);
         if (!packageToBuy) {
@@ -15,17 +21,19 @@ const createSubscription = async (req, res) => {
         }
 
         const orderId = `SUB-${userId}-${Date.now()}`;
+        const totalAmount = packageToBuy.price * numMonths;
+        const totalDurationDays = packageToBuy.durationDays * numMonths;
 
         // Create a pending transaction record
         await db.Transaction.create({
             userId,
             packageId,
             orderId,
-            amount: packageToBuy.price,
+            amount: totalAmount,
             status: 'pending',
         });
 
-        const token = await createTransaction(userId, orderId, packageToBuy.price);
+        const token = await createTransaction(userId, orderId, totalAmount, totalDurationDays);
         res.status(200).json({ token });
     } catch (error) {
         console.error("Payment Error:", error);

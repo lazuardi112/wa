@@ -1,5 +1,6 @@
 const db = require('../models');
-const { sendOtp } = require('../services/whatsappService');
+// Renamed to 'sendMessage' to match the service export
+const { sendMessage } = require('../services/whatsappService');
 const crypto = require('crypto');
 
 // @desc    Register a new user and send OTP (EJS version)
@@ -39,8 +40,28 @@ const registerUser = async (req, res) => {
 
     await db.Otp.upsert({ userId: user.id, code: otpCode, expiresAt }, { transaction: t });
 
-    // In a real app, you might want to handle the case where OTP sending fails
-    // await sendOtp(whatsappNumber, otpCode);
+    // --- OTP Sending Logic ---
+    const otpDeviceSetting = await db.Setting.findOne({ where: { key: 'otpDeviceId' } });
+    if (!otpDeviceSetting || !otpDeviceSetting.value) {
+        // If OTP device is not set, we cannot send the OTP.
+        // For now, we will log a warning and proceed without sending.
+        // In production, you might want to throw an error here.
+        console.warn("OTP Device not configured in admin settings. OTP cannot be sent.");
+    } else {
+        const otpDevice = await db.Device.findByPk(otpDeviceSetting.value);
+        if (otpDevice && otpDevice.status === 'connected') {
+            const otpMessage = `Your verification code is: ${otpCode}`;
+            try {
+                await sendMessage(otpDevice.instanceId, whatsappNumber, otpMessage);
+            } catch (otpError) {
+                console.error("Failed to send OTP:", otpError.message);
+                // Decide if registration should fail if OTP sending fails.
+                // For now, we'll allow registration to continue but log the error.
+            }
+        } else {
+            console.warn(`OTP Device (ID: ${otpDeviceSetting.value}) is not connected or not found. OTP cannot be sent.`);
+        }
+    }
 
     await t.commit();
     // Redirect to the OTP verification page with the user's ID

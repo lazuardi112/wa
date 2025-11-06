@@ -34,18 +34,22 @@
             <% packages.forEach(pkg => { %>
                 <div class="package-card <%= currentPackage.id === pkg.id ? 'current' : '' %>">
                     <h2><%= pkg.name %></h2>
-                    <div class="price">IDR <%= pkg.price.toLocaleString() %></div>
+                    <div class="price">IDR <%= pkg.price.toLocaleString() %> / month</div>
                     <ul>
                         <li><strong><%= pkg.maxDevices %></strong> Device(s)</li>
                         <li><strong><%= pkg.messageLimit.toLocaleString() %></strong> Messages/Day</li>
                         <li>API Access: <strong><%= pkg.apiAccess ? 'Yes' : 'No' %></strong></li>
                         <li>Duration: <strong><%= pkg.durationDays %></strong> Days</li>
                     </ul>
-                    <% if (currentPackage.id !== pkg.id) { %>
+                    <% if (currentPackage.id !== pkg.id && pkg.name !== 'Free') { %>
+                        <div class="form-group" style="margin-top: 1rem;">
+                            <label for="months-<%= pkg.id %>">Months:</label>
+                            <input type="number" id="months-<%= pkg.id %>" value="1" min="1" max="12" style="width: 100px; text-align: center;">
+                        </div>
                         <button class="btn-upgrade" onclick="pay('<%= pkg.id %>')">
-                            <%= currentPackage.price < pkg.price ? 'Upgrade' : 'Downgrade' %>
+                            Upgrade to Premium
                         </button>
-                    <% } else { %>
+                    <% } else if (currentPackage.id === pkg.id) { %>
                         <p><strong>(Current Plan)</strong></p>
                     <% } %>
                 </div>
@@ -56,7 +60,17 @@
     <script type="text/javascript">
         async function pay(packageId) {
             try {
-                const response = await fetch(`/api/v1/payment/subscribe/\${packageId}`, { method: 'POST' });
+                const monthsInput = document.getElementById(`months-\${packageId}`);
+                const months = monthsInput ? monthsInput.value : 1;
+
+                const response = await fetch(`/api/v1/payment/subscribe/\${packageId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ months: months }),
+                });
+
                 if (!response.ok) {
                     const error = await response.json();
                     throw new Error(error.message || 'Failed to initiate payment');
