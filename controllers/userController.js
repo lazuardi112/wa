@@ -9,17 +9,16 @@ const generateApiKey = async (req, res) => {
     try {
         const userId = req.session.user.id;
 
-        const existingKey = await db.ApiKey.findOne({ where: { userId } });
-        if (existingKey) {
-            return res.status(400).redirect('/api-docs'); // Redirect back if key exists
-        }
+        // Invalidate any old API key by deleting it
+        await db.ApiKey.destroy({ where: { userId } });
 
+        // Generate a new, simple, non-hashed API key
         const rawApiKey = crypto.randomBytes(32).toString('hex');
-        const hashedKey = await bcrypt.hash(rawApiKey, 10);
 
+        // Store the raw key directly in the database
         await db.ApiKey.create({
             userId,
-            key: hashedKey
+            key: rawApiKey // No hashing
         });
 
         // Store the raw key in the session to be displayed ONCE.
@@ -29,7 +28,8 @@ const generateApiKey = async (req, res) => {
 
     } catch (error) {
         console.error("API Key Generation Error:", error);
-        res.status(500).redirect('/api-docs');
+        // Add an error message to the redirect
+        res.redirect('/api-docs?status=error&msg=Could%20not%20generate%20API%20key.');
     }
 };
 
