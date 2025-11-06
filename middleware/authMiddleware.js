@@ -1,22 +1,43 @@
 const db = require('../models');
 
+/**
+ * Middleware for API routes. Returns JSON error on failure.
+ */
 const protect = async (req, res, next) => {
     if (req.session.user) {
-        try {
-            const user = await db.User.findByPk(req.session.user.id);
-            if (user) {
-                req.user = user;
-                next();
-            } else {
-                res.status(401).json({ message: 'Not authorized, user not found' });
-            }
-        } catch (error) {
-            res.status(500).json({ message: 'Server error during authentication' });
-        }
+        // The userAuth middleware will handle fetching the user object.
+        // This middleware only needs to check for the session's existence for API routes.
+        next();
     } else {
-        res.status(401).json({ message: 'Not authorized, no session' });
+        // Check for API key as a fallback for programmatic access
+        const apiKey = req.headers['x-api-key'];
+        if (!apiKey) {
+            return res.status(401).json({ message: 'Not authorized, no session or API key' });
+        }
+        try {
+            const apiKeyRecord = await db.ApiKey.findOne({ where: { key: apiKey } });
+            if (!apiKeyRecord) {
+                return res.status(401).json({ message: 'Not authorized, invalid API key' });
+            }
+            req.session.user = { id: apiKeyRecord.userId }; // Mock session for userAuth
+            next();
+        } catch (error) {
+            return res.status(500).json({ message: 'Server error during API key authentication' });
+        }
     }
 };
+
+/**
+ * Middleware for view routes. Redirects to /login on failure.
+ */
+const protectView = (req, res, next) => {
+    if (req.session.user) {
+        next();
+    } else {
+        res.redirect('/login');
+    }
+};
+
 
 const admin = (req, res, next) => {
     if (req.session.admin) {
@@ -37,11 +58,16 @@ const isAdmin = (req, res, next) => {
     if (req.session.admin && req.session.admin.isLoggedIn) {
         return next();
     }
-    // For API routes, send a JSON error. For views, redirect.
     if (req.accepts('html')) {
         return res.redirect('/admin/login');
     }
     return res.status(403).json({ message: 'Forbidden: Admins only.' });
 };
 
-module.exports = { protect, admin, redirectIfLoggedIn, isAdmin };
+module.exports = {
+    protect,
+    protectView, // Export the new middleware
+    admin,
+    redirectIfLoggedIn,
+    isAdmin
+};
