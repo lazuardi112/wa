@@ -2,6 +2,19 @@ const db = require('../models');
 
 // Maps to track conversation state
 const conversationState = new Map();
+const CONVERSATION_TIMEOUT = 5 * 60 * 1000; // 5 minutes
+
+// Cleanup interval for stale conversations
+setInterval(() => {
+    const now = Date.now();
+    for (const [sender, state] of conversationState.entries()) {
+        if (now - state.lastInteraction > CONVERSATION_TIMEOUT) {
+            conversationState.delete(sender);
+            console.log(`[BotService] Conversation timed out for ${sender}. State cleared.`);
+        }
+    }
+}, 60 * 1000); // Check every minute
+
 
 /**
  * Processes an incoming WhatsApp message for bot logic.
@@ -58,9 +71,20 @@ const processMessage = async (sock, msg, instanceId, deviceId) => {
             });
         }
 
-        const matchedFlow = flowsToSearch.find(flow => messageText.startsWith(flow.prefix.toLowerCase()));
+        // Use exact match for top-level commands, prefix match for replies
+        const isTopLevel = !currentState;
+        const matchedFlow = flowsToSearch.find(flow =>
+            isTopLevel
+                ? messageText === flow.prefix.toLowerCase()
+                : messageText.startsWith(flow.prefix.toLowerCase())
+        );
 
         if (matchedFlow) {
+            // Update last interaction time to keep the session alive
+            if (currentState) {
+                currentState.lastInteraction = Date.now();
+            }
+
             if (lastReset !== today) {
                 await db.User.update(
                     { messageCount: 0, lastResetDate: new Date() },
@@ -108,7 +132,13 @@ const processMessage = async (sock, msg, instanceId, deviceId) => {
                 conversationState.delete(sender);
             }
         } else if (currentState) {
+            // Invalid option in a conversation, so we clear the state
             conversationState.delete(sender);
+            await sock.sendMessage(sender, { text: "Pilihan tidak valid. Silakan coba lagi dari menu utama." });
+        } else {
+            // No top-level command matched, send a default response
+            const defaultResponse = "Maaf, perintah tidak dikenali. Silakan ketik perintah yang valid.";
+            await sock.sendMessage(sender, { text: defaultResponse });
         }
     } catch (error) {
         console.error(`[BotService] Error processing bot logic for instance ${instanceId}:`, error);
