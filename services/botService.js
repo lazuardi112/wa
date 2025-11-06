@@ -96,10 +96,13 @@ const processMessage = async (sock, msg, instanceId, deviceId) => {
             let textMessage = '';
             let imageUrl = null;
 
-            for (const res of matchedFlow.response) {
-                if (res.type === 'image' && res.content) {
+            // Normalize response to always be an array to handle both single object and array responses
+            const responses = Array.isArray(matchedFlow.response) ? matchedFlow.response : [matchedFlow.response];
+
+            for (const res of responses) {
+                if (res && res.type === 'image' && res.content) {
                     imageUrl = res.content;
-                } else if (res.type === 'text' && res.content) {
+                } else if (res && res.type === 'text' && res.content) {
                     textMessage += res.content + '\n';
                 }
             }
