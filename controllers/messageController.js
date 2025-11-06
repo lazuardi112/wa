@@ -88,8 +88,21 @@ const sendMessage = async (req, res) => {
             }
         }
 
-        // Atomically increment the user's message count
+        // Atomically increment the user's message count, handling daily reset
         if (successfulSends > 0) {
+            const today = new Date().setHours(0, 0, 0, 0);
+            const lastReset = user.lastResetDate ? new Date(user.lastResetDate).setHours(0, 0, 0, 0) : null;
+
+            if (lastReset !== today) {
+                // If it's a new day, reset the count to 0 and update the reset date
+                await db.User.update(
+                    { messageCount: 0, lastResetDate: new Date() },
+                    { where: { id: user.id } }
+                );
+                 console.log(`[MessageController] Reset daily message count for user ${user.email}.`);
+            }
+
+            // Now, increment the count
             await db.User.increment('messageCount', {
                 by: successfulSends,
                 where: { id: user.id }

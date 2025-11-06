@@ -17,7 +17,7 @@ module.exports = {
         name: 'Premium',
         price: 15000,
         durationDays: 30,
-        maxDevices: 99999,
+        maxDevices: 20,
         messageLimit: 99999,
         apiAccess: true,
         createdAt: new Date(),

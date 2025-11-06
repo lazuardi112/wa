@@ -8,17 +8,8 @@ const checkMessageLimit = async (req, res, next) => {
     try {
         const { user, package: userPackage } = req;
 
-        // Reset daily message count if it's a new day
-        const today = new Date().setHours(0, 0, 0, 0);
-        const lastReset = user.lastResetDate ? new Date(user.lastResetDate).setHours(0, 0, 0, 0) : null;
-
-        if (lastReset !== today) {
-            user.lastResetDate = new Date();
-            // We reset the count here, but the final save will be in the controller
-            // to ensure atomicity with the increment operation.
-            user.messageCount = 0;
-        }
-
+        // Note: The daily message count reset logic has been moved to the controller
+        // to ensure it happens atomically before the increment.
         const messageLimit = userPackage.messageLimit;
         const numbers = req.body.numbers ? req.body.numbers.split(',').map(n => n.trim()).filter(Boolean).length : 1;
 
