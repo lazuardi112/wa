@@ -4,7 +4,7 @@
 console.log("🚀 Server script starting...");
 
 try {
-    // Modul dan konfigurasi environment
+    // --- 1. Module Imports & Environment Config ---
     console.log("1. Loading modules...");
     const path = require('path');
     require('dotenv').config();
@@ -15,33 +15,30 @@ try {
     const db = require('./models');
     const { initIO } = require('./socket');
     const { reconnectExistingSessions } = require('./services/whatsappService');
+    // Import middleware
+    const { protectView, redirectIfLoggedIn } = require('./middleware/authMiddleware');
+    const { userAuth } = require('./middleware/userAuth');
     console.log("   Modules loaded successfully.");
 
-    // Inisialisasi Express dan HTTP Server
+    // --- 2. Express App Initialization ---
     console.log("2. Initializing Express app...");
     const app = express();
     const server = http.createServer(app);
     console.log("   Express app initialized.");
 
-    // =====================================================
-    // Konfigurasi View Engine (EJS)
-    // =====================================================
+    // --- 3. View Engine Configuration (EJS) ---
     console.log("3. Configuring view engine...");
     app.set('view engine', 'ejs');
     app.set('views', path.join(__dirname, 'views'));
     console.log("   View engine configured.");
 
-    // =====================================================
-    // Middleware
-    // =====================================================
+    // --- 4. Core Middleware ---
     console.log("4. Applying middleware...");
     app.use(express.json());
     app.use(express.urlencoded({ extended: true }));
     console.log("   Middleware applied.");
 
-    // =====================================================
-    // Konfigurasi Session
-    // =====================================================
+    // --- 5. Session Configuration ---
     console.log("5. Configuring session store...");
     const sessionStore = new SequelizeStore({ db: db.sequelize });
     app.use(
@@ -50,20 +47,14 @@ try {
         store: sessionStore,
         resave: false,
         saveUninitialized: false,
-        cookie: {
-          maxAge: 24 * 60 * 60 * 1000,
-          secure: process.env.NODE_ENV === 'production',
-          httpOnly: true,
-        },
+        cookie: { maxAge: 24 * 60 * 60 * 1000 },
       })
     );
     console.log("   Session store configured.");
 
-    // =====================================================
-    // Routes
-    // =====================================================
+    // --- 6. Route Setup ---
     console.log("6. Setting up routes...");
-    // API Routes
+    // API Routes (already protected internally where needed)
     app.use('/api/v1/auth', require('./routes/authRoutes'));
     app.use('/api/v1/admin', require('./routes/adminRoutes'));
     app.use('/api/v1/devices', require('./routes/deviceRoutes'));
@@ -72,34 +63,63 @@ try {
     app.use('/api/v1/payment', require('./routes/paymentRoutes'));
     app.use('/api/v1/bot', require('./routes/botRoutes'));
 
-    // View Routes (EJS Rendering)
-    app.use('/admin', require('./routes/adminViewRoutes')); // Admin view routes
-    app.use('/', require('./routes/viewRoutes')); // Main user view routes
+    // Admin View Routes
+    app.use('/admin', require('./routes/adminViewRoutes'));
+
+    // --- Main User View Routes ---
+    // Create a separate router for protected view routes
+    const protectedViews = express.Router();
+    protectedViews.use(protectView, userAuth); // Apply protection to this entire router
+
+    // Import controllers
+    const viewController = require('./controllers/viewController');
+
+    // Assign protected routes to the protected router
+    protectedViews.get('/dashboard', viewController.renderDashboard);
+    protectedViews.get('/devices', viewController.renderDevicesPage);
+    protectedViews.get('/messaging', viewController.renderMessagingPage);
+    protectedViews.get('/bot', viewController.renderBotPage);
+    protectedViews.get('/bot/edit/:id', viewController.renderEditBotPage);
+    protectedViews.get('/api-docs', viewController.renderApiDocsPage);
+    protectedViews.get('/subscribe', viewController.renderSubscribePage);
+    protectedViews.get('/history', viewController.renderHistoryPage);
+    protectedViews.get('/logout', (req, res) => {
+        req.session.destroy(() => {
+            res.clearCookie('connect.sid');
+            res.redirect('/login');
+        });
+    });
+
+    // Use the protected router
+    app.use('/', protectedViews);
+
+    // Public routes (must be defined AFTER protected routes to avoid middleware conflicts)
+    app.get('/login', redirectIfLoggedIn, (req, res) => res.render('login', { query: req.query || {} }));
+    app.get('/register', redirectIfLoggedIn, (req, res) => res.render('register', { query: req.query || {} }));
+    app.get('/verify-otp', redirectIfLoggedIn, (req, res) => {
+        if (!req.query.userId) return res.redirect('/register');
+        res.render('verify-otp', { query: req.query || {}, userId: req.query.userId });
+    });
+    app.get('/', redirectIfLoggedIn, (req, res) => {
+        // This will now correctly redirect to /login if not logged in
+        res.redirect('/dashboard');
+    });
+
     console.log("   Routes set up successfully.");
 
-    // =====================================================
-    // Socket.IO Initialization
-    // =====================================================
+    // --- 7. Socket.IO Initialization ---
     console.log("7. Initializing Socket.IO...");
     initIO(server);
     console.log("   Socket.IO initialized.");
 
-    // =====================================================
-    // Jalankan Server
-    // =====================================================
+    // --- 8. Server Start ---
     const PORT = process.env.PORT || 8080;
-
     async function startServer() {
         console.log("8. Starting server...");
-        // Pertama, sinkronkan session store
         await sessionStore.sync();
         console.log("   Session store synchronized.");
-
-        // Kemudian, sinkronkan semua model database
         await db.sequelize.sync({ force: false });
         console.log("✅ Database connected and synchronized.");
-
-        // Terakhir, jalankan server
         server.listen(PORT, () => {
             console.log(`✅ Server running on http://localhost:${PORT}`);
             reconnectExistingSessions();
