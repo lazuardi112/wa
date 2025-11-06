@@ -59,7 +59,7 @@
 
             <h3>Base URL</h3>
             <p>The base URL for all API endpoints is:</p>
-            <pre><code>http://xcd.xcreate.my.id</code></pre>
+            <pre><code>https://xcd.xcreate.my.id</code></pre>
 
             <h3>Multiple Recipients</h3>
             <p>To send a message to multiple numbers, provide a comma-separated string in the <code>to</code> parameter.</p>
@@ -86,7 +86,7 @@
             </div>
 
             <div id="text-curl" class="tab-content active">
-                <pre><code>curl -X POST http://xcd.xcreate.my.id/api/v1/message/send-text \
+                <pre><code>curl -X POST https://xcd.xcreate.my.id/api/v1/message/send-text \
 -H "Content-Type: application/json" \
 -H "x-api-key: YOUR_API_KEY" \
 -d '{
@@ -98,7 +98,7 @@
             <div id="text-php" class="tab-content">
                 <pre><code>&lt;?php
 $apiKey = 'YOUR_API_KEY';
-$url = 'http://xcd.xcreate.my.id/api/v1/message/send-text';
+$url = 'https://xcd.xcreate.my.id/api/v1/message/send-text';
 $data = [
     'deviceId' => 1,
     'to' => '6281234567890',
@@ -124,7 +124,7 @@ echo $response;
                 <pre><code>// Can be run in a browser or Node.js environment with 'node-fetch'
 async function sendText() {
     const apiKey = 'YOUR_API_KEY';
-    const url = 'http://xcd.xcreate.my.id/api/v1/message/send-text';
+    const url = 'https://xcd.xcreate.my.id/api/v1/message/send-text';
     const data = {
         deviceId: 1,
         to: '6281234567890',
@@ -173,7 +173,7 @@ sendText();</code></pre>
             </div>
 
             <div id="<%= type %>-curl" class="tab-content active">
-                <pre><code>curl -X POST http://xcd.xcreate.my.id/api/v1/message/send-<%= type %> \
+                <pre><code>curl -X POST https://xcd.xcreate.my.id/api/v1/message/send-<%= type %> \
 -H "x-api-key: YOUR_API_KEY" \
 -F "deviceId=1" \
 -F "to=6281234567890" \
@@ -183,7 +183,7 @@ sendText();</code></pre>
              <div id="<%= type %>-php" class="tab-content">
                 <pre><code>&lt;?php
 $apiKey = 'YOUR_API_KEY';
-$url = 'http://xcd.xcreate.my.id/api/v1/message/send-<%= type %>';
+$url = 'https://xcd.xcreate.my.id/api/v1/message/send-<%= type %>';
 $filePath = '/path/to/your/<%= type === 'image' ? 'image.jpg' : 'file.pdf' %>';
 
 // Using CURLFile is the recommended way to upload files in PHP.
@@ -214,7 +214,7 @@ echo $response;
 
 async function sendFile() {
     const apiKey = 'YOUR_API_KEY';
-    const url = 'http://xcd.xcreate.my.id/api/v1/message/send-<%= type %>';
+    const url = 'https://xcd.xcreate.my.id/api/v1/message/send-<%= type %>';
     const fileInput = document.getElementById('fileInput');
 
     if (fileInput.files.length === 0) {

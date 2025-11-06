@@ -12,17 +12,18 @@ const protect = async (req, res, next) => {
         // Check for API key as a fallback for programmatic access
         const apiKey = req.headers['x-api-key'];
         if (!apiKey) {
-            return res.status(401).json({ message: 'Not authorized, no session or API key' });
+            return res.status(401).json({ success: false, message: 'Unauthorized: Missing API key.' });
         }
         try {
             const apiKeyRecord = await db.ApiKey.findOne({ where: { key: apiKey } });
             if (!apiKeyRecord) {
-                return res.status(401).json({ message: 'Not authorized, invalid API key' });
+                return res.status(401).json({ success: false, message: 'Unauthorized: Invalid API key.' });
             }
             req.session.user = { id: apiKeyRecord.userId }; // Mock session for userAuth
             next();
         } catch (error) {
-            return res.status(500).json({ message: 'Server error during API key authentication' });
+             console.error('[API Key Auth Error]', error);
+            return res.status(500).json({ success: false, message: 'Server error during API key authentication.' });
         }
     }
 };
