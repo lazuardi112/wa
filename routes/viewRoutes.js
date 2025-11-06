@@ -13,18 +13,26 @@ const {
 const { protect, redirectIfLoggedIn } = require('../middleware/authMiddleware');
 const { userAuth } = require('../middleware/userAuth');
 
-// Apply userAuth middleware to all protected routes
-router.use(protect, userAuth);
-
-// Static public pages
-router.get('/login', redirectIfLoggedIn, (req, res) => res.render('login', { query: req.query }));
-router.get('/register', redirectIfLoggedIn, (req, res) => res.render('register', { query: req.query }));
+// --- Public Routes ---
+// These routes are for users who are not logged in.
+router.get('/login', redirectIfLoggedIn, (req, res) => res.render('login', { query: req.query || {} }));
+router.get('/register', redirectIfLoggedIn, (req, res) => res.render('register', { query: req.query || {} }));
 router.get('/verify-otp', redirectIfLoggedIn, (req, res) => {
     if (!req.query.userId) return res.redirect('/register');
-    res.render('verify-otp', { query: req.query, userId: req.query.userId });
+    res.render('verify-otp', { query: req.query || {}, userId: req.query.userId });
 });
 
-// Protected pages
+// Root path redirection
+router.get('/', (req, res) => {
+    if (req.session.user) return res.redirect('/dashboard');
+    res.redirect('/login');
+});
+
+// --- Protected Routes ---
+// All routes below this line require a user to be logged in.
+// The `protect` middleware checks for a session, and `userAuth` fetches fresh user data.
+router.use(protect, userAuth);
+
 router.get('/dashboard', renderDashboard);
 router.get('/devices', renderDevicesPage);
 router.get('/messaging', renderMessagingPage);
@@ -34,19 +42,12 @@ router.get('/api-docs', renderApiDocsPage);
 router.get('/subscribe', renderSubscribePage);
 router.get('/history', renderHistoryPage);
 
-// Logout
 router.get('/logout', (req, res) => {
     req.session.destroy((err) => {
         if (err) return res.redirect('/dashboard');
         res.clearCookie('connect.sid');
         res.redirect('/login');
     });
-});
-
-// Root path redirection
-router.get('/', (req, res) => {
-    if (req.session.user) return res.redirect('/dashboard');
-    res.redirect('/login');
 });
 
 module.exports = router;
