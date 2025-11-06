@@ -5,9 +5,9 @@ const pino = require('pino');
 const db = require('../models');
 const { getIO } = require('../socket');
 const qrcode = require('qrcode');
+const { processMessage } = require('./botService'); // Import the new bot service
 
 const sessions = new Map();
-const conversationState = new Map(); // Untuk melacak status percakapan bot
 
 // Fungsi utama untuk membuat dan mengelola sesi koneksi
 async function connectToWhatsApp(instanceId, deviceId) {
@@ -69,141 +69,11 @@ async function connectToWhatsApp(instanceId, deviceId) {
         }
     });
 
-    // Listener untuk pesan masuk (logika bot)
+    // Listener untuk pesan masuk, sekarang mendelegasikannya ke botService
     sock.ev.on('messages.upsert', async ({ messages }) => {
         const msg = messages[0];
-        if (!msg.message || msg.key.fromMe) return;
-
-        const sender = msg.key.remoteJid;
-        const messageText = (msg.message.conversation || msg.message.extendedTextMessage?.text)?.trim().toLowerCase();
-
-        if (!messageText) return;
-
-        const currentState = conversationState.get(sender);
-
-        try {
-            // Find the user associated with this device to check their message limit
-            const device = await db.Device.findOne({ where: { id: deviceId } });
-            if (!device) return; // Should not happen if the session is active
-
-            const user = await db.User.findByPk(device.userId);
-            if (!user) return; // Should not happen
-
-            // Find the user's current package
-            let subscription = await db.Transaction.findOne({
-                where: { userId: user.id, status: 'success' },
-                order: [['expiresAt', 'DESC']],
-                include: ['package']
-            });
-
-            if (!subscription || new Date() > new Date(subscription.expiresAt)) {
-                const freePackage = await db.Package.findOne({ where: { name: 'Free' } });
-                subscription = { package: freePackage };
-            }
-
-            const userPackage = subscription.package;
-
-            // Reset daily message count if needed
-            const today = new Date().setHours(0, 0, 0, 0);
-            const lastReset = user.lastResetDate ? new Date(user.lastResetDate).setHours(0, 0, 0, 0) : null;
-            if (lastReset !== today) {
-                user.messageCount = 0;
-                user.lastResetDate = new Date();
-                await user.save();
-            }
-
-            // Check if user has messages left before processing bot logic
-            if (user.messageCount >= userPackage.messageLimit) {
-                console.log(`[${instanceId}] User ${user.email} has reached their message limit. Bot response not sent.`);
-                return; // Stop processing if limit is reached
-            }
-
-            let flowsToSearch;
-            // Jika pengguna berada dalam percakapan, cari balasan turunan
-            if (currentState) {
-                flowsToSearch = await db.BotFlow.findAll({
-                    where: {
-                        deviceId: deviceId,
-                        isEnabled: true,
-                        parentId: currentState.currentFlowId,
-                    },
-                });
-            } else {
-                // Jika tidak, cari pemicu tingkat atas
-                flowsToSearch = await db.BotFlow.findAll({
-                    where: {
-                        deviceId: deviceId,
-                        isEnabled: true,
-                        parentId: null,
-                    },
-                });
-            }
-
-            const matchedFlow = flowsToSearch.find(flow => messageText === flow.prefix.toLowerCase());
-
-            if (matchedFlow) {
-                // Atomically increment message count before sending
-                await db.User.increment('messageCount', { by: 1, where: { id: user.id } });
-                console.log(`[Bot] Incremented messageCount by 1 for user ${user.email}.`);
-
-                // New logic to handle multi-part messages correctly
-                let textMessage = '';
-                let imageUrl = null;
-
-                for (const res of matchedFlow.response) {
-                    if (res.type === 'image' && res.content) {
-                        imageUrl = res.content; // Capture the first image URL
-                    } else if (res.type === 'text' && res.content) {
-                        textMessage += res.content + '\n'; // Concatenate text parts
-                    }
-                }
-
-                textMessage = textMessage.trim();
-
-                const messagePayload = {};
-                if (imageUrl) {
-                    messagePayload.image = { url: imageUrl };
-                    if (textMessage) {
-                        messagePayload.caption = textMessage;
-                    }
-                } else if (textMessage) {
-                    messagePayload.text = textMessage;
-                }
-
-                if (Object.keys(messagePayload).length > 0) {
-                    console.log(`[${instanceId}] Preparing to send message to ${sender}. Payload:`, JSON.stringify(messagePayload, null, 2));
-                    try {
-                        await sock.sendMessage(sender, messagePayload);
-                        console.log(`[${instanceId}] Bot response sent successfully to ${sender} for prefix "${matchedFlow.prefix}". User message count is now ${user.messageCount}.`);
-                    } catch (sendError) {
-                        console.error(`[${instanceId}] CRITICAL: Failed to send message via Baileys. Prefix: "${matchedFlow.prefix}". Payload:`, JSON.stringify(messagePayload), 'Error:', sendError);
-                    }
-                } else {
-                     console.warn(`[${instanceId}] No valid content to send for prefix "${matchedFlow.prefix}".`);
-                }
-
-
-                // Periksa apakah alur ini memiliki turunan
-                const children = await db.BotFlow.findAll({ where: { parentId: matchedFlow.id, isEnabled: true } });
-
-                if (children.length > 0) {
-                    // Masuk ke status percakapan
-                    conversationState.set(sender, {
-                        currentFlowId: matchedFlow.id,
-                        lastInteraction: Date.now(),
-                    });
-                } else {
-                    // Alur akhir, hapus status
-                    conversationState.delete(sender);
-                }
-            } else if (currentState) {
-                // Jika pengguna berada dalam percakapan tetapi tidak ada yang cocok, keluar
-                conversationState.delete(sender);
-                // Opsional: Kirim pesan "Saya tidak mengerti"
-            }
-        } catch (error) {
-            console.error(`[${instanceId}] Error processing bot logic:`, error);
-        }
+        // Teruskan ke botService untuk diproses
+        await processMessage(msg, instanceId, deviceId);
     });
 
     return sock;
