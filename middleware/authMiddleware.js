@@ -1,4 +1,5 @@
 const db = require('../models');
+const crypto = require('crypto');
 
 /**
  * Middleware for API routes. Returns JSON error on failure.
@@ -15,7 +16,11 @@ const protect = async (req, res, next) => {
             return res.status(401).json({ success: false, message: 'Unauthorized: Missing API key.' });
         }
         try {
-            const apiKeyRecord = await db.ApiKey.findOne({ where: { key: apiKey } });
+            // Hash the incoming API key to match the one in the database
+            const hashedKey = crypto.createHash('sha256').update(apiKey).digest('hex');
+
+            const apiKeyRecord = await db.ApiKey.findOne({ where: { key: hashedKey } });
+
             if (!apiKeyRecord) {
                 return res.status(401).json({ success: false, message: 'Unauthorized: Invalid API key.' });
             }
