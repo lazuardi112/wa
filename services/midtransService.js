@@ -58,10 +58,9 @@ const createTransaction = async (userId, orderId, amount) => {
             order_id: orderId,
             gross_amount: amount,
         },
-        // In the future, we could add acquirer selection if needed
-        // qris: {
-        //     acquirer: 'gopay'
-        // }
+        qris: {
+            acquirer: 'gopay' // This is often required for QRIS generation
+        }
     };
 
     try {
@@ -69,7 +68,8 @@ const createTransaction = async (userId, orderId, amount) => {
         return response.data; // Return the full response from Midtrans
     } catch (error) {
         console.error('Midtrans API request failed:', error.response ? error.response.data : error.message);
-        throw new Error('Failed to create Midtrans transaction.');
+        const errorMessage = error.response?.data?.status_message || 'Failed to create Midtrans transaction.';
+        throw new Error(errorMessage);
     }
 };
 
