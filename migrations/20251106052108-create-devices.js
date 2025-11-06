@@ -17,8 +17,8 @@ module.exports = {
         type: Sequelize.STRING
       },
       status: {
-        type: Sequelize.STRING,
-        defaultValue: 'disconnected'
+        type: Sequelize.ENUM('uninitialized', 'connecting', 'connected', 'disconnected', 'waiting_qr'),
+        defaultValue: 'uninitialized'
       },
       userId: {
         type: Sequelize.INTEGER,
