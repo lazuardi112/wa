@@ -145,10 +145,6 @@ async function connectToWhatsApp(instanceId, deviceId) {
                     console.log(`[Bot] Reset daily message count for user ${user.email}.`);
                 }
 
-                // Atomically increment message count before sending
-                await db.User.increment('messageCount', { by: 1, where: { id: user.id } });
-                console.log(`[Bot] Incremented messageCount by 1 for user ${user.email}.`);
-
                 // New logic to handle multi-part messages correctly
                 let textMessage = '';
                 let imageUrl = null;
@@ -174,10 +170,14 @@ async function connectToWhatsApp(instanceId, deviceId) {
                 }
 
                 if (Object.keys(messagePayload).length > 0) {
+                    // Atomically increment message count ONLY when there's a message to send
+                    await db.User.increment('messageCount', { by: 1, where: { id: user.id } });
+                    console.log(`[Bot] Incremented messageCount by 1 for user ${user.email}.`);
+
                     console.log(`[${instanceId}] Preparing to send message to ${sender}. Payload:`, JSON.stringify(messagePayload, null, 2));
                     try {
                         await sock.sendMessage(sender, messagePayload);
-                        console.log(`[${instanceId}] Bot response sent successfully to ${sender} for prefix "${matchedFlow.prefix}". User message count is now ${user.messageCount}.`);
+                        console.log(`[${instanceId}] Bot response sent successfully to ${sender} for prefix "${matchedFlow.prefix}".`);
                     } catch (sendError) {
                         console.error(`[${instanceId}] CRITICAL: Failed to send message via Baileys. Prefix: "${matchedFlow.prefix}". Payload:`, JSON.stringify(messagePayload), 'Error:', sendError);
                     }
