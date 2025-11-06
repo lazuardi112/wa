@@ -7,14 +7,9 @@ const { createTransaction, handleNotification } = require('../services/midtransS
 const createSubscription = async (req, res) => {
     try {
         const userId = req.session.user.id;
-        const { packageId: packageIdStr } = req.params;
+        const { packageId } = req.params;
         const { months } = req.body; // Get months from request body
         const numMonths = parseInt(months, 10) || 1;
-        const packageId = parseInt(packageIdStr, 10);
-
-        if (isNaN(packageId)) {
-            return res.status(400).json({ message: 'Invalid package ID.' });
-        }
 
         if (numMonths < 1 || numMonths > 12) {
             return res.status(400).json({ message: 'Invalid number of months.' });
@@ -30,7 +25,7 @@ const createSubscription = async (req, res) => {
         const totalDurationDays = packageToBuy.durationDays * numMonths;
 
         // Create a pending transaction record
-        const transaction = await db.Transaction.create({
+        await db.Transaction.create({
             userId,
             packageId,
             orderId,
@@ -39,10 +34,6 @@ const createSubscription = async (req, res) => {
         });
 
         const transactionResponse = await createTransaction(userId, orderId, totalAmount);
-
-        // Save the full response from Midtrans to the transaction record
-        await transaction.update({ paymentGatewayData: transactionResponse });
-
         res.status(200).json(transactionResponse);
     } catch (error) {
         console.error("Payment Error:", error);

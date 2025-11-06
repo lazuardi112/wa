@@ -71,13 +71,8 @@ const processMessage = async (sock, msg, instanceId, deviceId) => {
             });
         }
 
-        // Use exact match for top-level commands, prefix match for replies
-        const isTopLevel = !currentState;
-        const matchedFlow = flowsToSearch.find(flow =>
-            isTopLevel
-                ? messageText === flow.prefix.toLowerCase()
-                : messageText.startsWith(flow.prefix.toLowerCase())
-        );
+        // Strict prefix matching for all messages
+        const matchedFlow = flowsToSearch.find(flow => messageText === flow.prefix.toLowerCase());
 
         if (matchedFlow) {
             // Update last interaction time to keep the session alive
@@ -96,11 +91,7 @@ const processMessage = async (sock, msg, instanceId, deviceId) => {
             let textMessage = '';
             let imageUrl = null;
 
-            // Normalize response to always be an array to handle both single object and array responses
-            const responses = Array.isArray(matchedFlow.response) ? matchedFlow.response : [matchedFlow.response];
 
-            for (const res of responses) {
-                if (res && res.type === 'image' && res.content) {
                     imageUrl = res.content;
                 } else if (res && res.type === 'text' && res.content) {
                     textMessage += res.content + '\n';
@@ -135,14 +126,10 @@ const processMessage = async (sock, msg, instanceId, deviceId) => {
                 conversationState.delete(sender);
             }
         } else if (currentState) {
-            // Invalid option in a conversation, so we clear the state
+            // Invalid option within a conversation, clear state and do nothing further.
             conversationState.delete(sender);
-            await sock.sendMessage(sender, { text: "Pilihan tidak valid. Silakan coba lagi dari menu utama." });
-        } else {
-            // No top-level command matched, send a default response
-            const defaultResponse = "Maaf, perintah tidak dikenali. Silakan ketik perintah yang valid.";
-            await sock.sendMessage(sender, { text: defaultResponse });
         }
+        // No match and no active conversation? Do nothing.
     } catch (error) {
         console.error(`[BotService] Error processing bot logic for instance ${instanceId}:`, error);
     }
