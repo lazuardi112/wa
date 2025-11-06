@@ -35,29 +35,33 @@
     <div class="main-content">
         <h1>Subscription Plans</h1>
         <div class="packages">
-            <% packages.forEach(pkg => { %>
-                <div class="package-card <%= currentPackage.id === pkg.id ? 'current' : '' %>">
-                    <h2><%= pkg.name %></h2>
-                    <div class="price">IDR <%= pkg.price.toLocaleString() %> / month</div>
-                    <ul>
-                        <li><strong><%= pkg.maxDevices %></strong> Device(s)</li>
-                        <li><strong><%= pkg.messageLimit.toLocaleString() %></strong> Messages/Day</li>
-                        <li>API Access: <strong><%= pkg.apiAccess ? 'Yes' : 'No' %></strong></li>
-                        <li>Duration: <strong><%= pkg.durationDays %></strong> Days</li>
-                    </ul>
-                    <% if (currentPackage.id !== pkg.id && pkg.name !== 'Free') { %>
-                        <div class="form-group" style="margin-top: 1rem;">
-                            <label for="months-<%= pkg.id %>">Months:</label>
-                            <input type="number" id="months-<%= pkg.id %>" value="1" min="1" max="12" style="width: 100px; text-align: center;">
-                        </div>
-                        <button class="btn-upgrade" onclick="pay('<%= pkg.id %>')">
-                            Upgrade to Premium
-                        </button>
-                    <% } else if (currentPackage.id === pkg.id) { %>
-                        <p><strong>(Current Plan)</strong></p>
-                    <% } %>
-                </div>
-            <% }); %>
+            <% if (packages && packages.length > 0) { %>
+                <% packages.forEach(pkg => { %>
+                    <div class="package-card <%= currentPackage.id === pkg.id ? 'current' : '' %>">
+                        <h2><%= pkg.name %></h2>
+                        <div class="price">IDR <%= pkg.price.toLocaleString() %> / month</div>
+                        <ul>
+                            <li><strong><%= pkg.maxDevices %></strong> Device(s)</li>
+                            <li><strong><%= pkg.messageLimit.toLocaleString() %></strong> Messages/Day</li>
+                            <li>API Access: <strong><%= pkg.apiAccess ? 'Yes' : 'No' %></strong></li>
+                            <li>Duration: <strong><%= pkg.durationDays %></strong> Days</li>
+                        </ul>
+                        <% if (currentPackage.id !== pkg.id && pkg.name !== 'Free') { %>
+                            <div class="form-group" style="margin-top: 1rem;">
+                                <label for="months-<%= pkg.id %>">Months:</label>
+                                <input type="number" id="months-<%= pkg.id %>" value="1" min="1" max="12" style="width: 100px; text-align: center;">
+                            </div>
+                            <button class="btn-upgrade" onclick="pay('<%= pkg.id %>')">
+                                Upgrade to Premium
+                            </button>
+                        <% } else if (currentPackage.id === pkg.id) { %>
+                            <p><strong>(Current Plan)</strong></p>
+                        <% } %>
+                    </div>
+                <% }); %>
+            <% } else { %>
+                <p>Saat ini tidak ada paket langganan yang tersedia. Silakan hubungi dukungan.</p>
+            <% } %>
         </div>
     </div>
 
@@ -107,13 +111,19 @@
                     throw new Error(data.message || 'Failed to initiate payment');
                 }
 
-                // Check if QR code URL is present
-                if (data.actions && data.actions.some(action => action.name === 'generate-qr-code')) {
-                    const qrCodeUrl = data.actions.find(action => action.name === 'generate-qr-code').url;
-                    qrCodeImage.src = qrCodeUrl;
+                // Check if QR code URL is present in the response
+                if (data.qr_code_url) {
+                    qrCodeImage.src = data.qr_code_url;
                     modal.style.display = 'block';
                 } else {
-                    throw new Error('QR Code URL not found in the response.');
+                    // Fallback for other potential structures, though qr_code_url is standard for QRIS
+                    const qrAction = data.actions?.find(action => action.name === 'generate-qr-code');
+                    if (qrAction) {
+                        qrCodeImage.src = qrAction.url;
+                        modal.style.display = 'block';
+                    } else {
+                        throw new Error('QR Code URL not found in the response.');
+                    }
                 }
 
             } catch (error) {
