@@ -54,6 +54,7 @@
                             <button class="btn-upgrade" onclick="pay('<%= pkg.id %>')">
                                 Upgrade to Premium
                             </button>
+                        <div id="payment-error-<%= pkg.id %>" style="color: #f8d7da; margin-top: 10px; font-size: 0.9em; text-align: center;"></div>
                         <% } else if (currentPackage.id === pkg.id) { %>
                             <p><strong>(Current Plan)</strong></p>
                         <% } %>
@@ -92,6 +93,10 @@
 
         async function pay(packageId) {
             const payButton = event.target;
+            const errorContainer = document.getElementById(`payment-error-${packageId}`);
+
+            // Clear previous errors and disable the button
+            if(errorContainer) errorContainer.textContent = '';
             payButton.disabled = true;
             payButton.textContent = 'Processing...';
 
@@ -128,7 +133,11 @@
 
             } catch (error) {
                 console.error('Payment error:', error);
-                alert(`An error occurred: \${error.message}`);
+                if(errorContainer) {
+                    errorContainer.textContent = `An error occurred: ${error.message}`;
+                } else {
+                    alert(`An error occurred: ${error.message}`); // Fallback
+                }
             } finally {
                 payButton.disabled = false;
                 payButton.textContent = 'Upgrade to Premium';
