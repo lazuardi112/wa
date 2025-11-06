@@ -8,9 +8,10 @@ const {
     // getBotFlows and updateBotFlow will be handled by viewController for page rendering
 } = require('../controllers/botController');
 const { protect } = require('../middleware/authMiddleware');
+const { userAuth } = require('../middleware/userAuth');
 
 // Protect all bot routes
-router.use(protect);
+router.use(protect, userAuth);
 
 // Route to create a new bot flow
 router.post('/create', createBotFlow);

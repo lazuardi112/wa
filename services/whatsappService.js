@@ -142,9 +142,9 @@ async function connectToWhatsApp(instanceId, deviceId) {
             const matchedFlow = flowsToSearch.find(flow => messageText === flow.prefix.toLowerCase());
 
             if (matchedFlow) {
-                // Increment message count before sending
-                user.messageCount += 1;
-                await user.save();
+                // Atomically increment message count before sending
+                await db.User.increment('messageCount', { by: 1, where: { id: user.id } });
+                console.log(`[Bot] Incremented messageCount by 1 for user ${user.email}.`);
 
                 // New logic to handle multi-part messages correctly
                 let textMessage = '';
