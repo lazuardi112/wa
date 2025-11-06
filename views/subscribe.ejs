@@ -51,7 +51,7 @@
                                 <label for="months-<%= pkg.id %>">Months:</label>
                                 <input type="number" id="months-<%= pkg.id %>" value="1" min="1" max="12" style="width: 100px; text-align: center;">
                             </div>
-                            <button class="btn-upgrade" onclick="pay('<%= pkg.id %>')">
+                            <button class="btn-upgrade" data-package-id="<%= pkg.id %>">
                                 Upgrade to Premium
                             </button>
                         <div id="payment-error-<%= pkg.id %>" style="color: #f8d7da; margin-top: 10px; font-size: 0.9em; text-align: center;"></div>
@@ -91,58 +91,65 @@
             }
         }
 
-        async function pay(packageId) {
-            const payButton = event.target;
-            const errorContainer = document.getElementById(`payment-error-${packageId}`);
+        document.addEventListener('DOMContentLoaded', () => {
+            const packageContainer = document.querySelector('.packages');
 
-            // Clear previous errors and disable the button
-            if(errorContainer) errorContainer.textContent = '';
-            payButton.disabled = true;
-            payButton.textContent = 'Processing...';
-
-            try {
-                const monthsInput = document.getElementById(`months-\${packageId}`);
-                const months = monthsInput ? monthsInput.value : 1;
-
-                const response = await fetch(`/api/v1/payment/subscribe/\${packageId}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ months }),
-                });
-
-                const data = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(data.message || 'Failed to initiate payment');
+            packageContainer.addEventListener('click', async (event) => {
+                if (!event.target.matches('.btn-upgrade')) {
+                    return;
                 }
 
-                // Check if QR code URL is present in the response
-                if (data.qr_code_url) {
-                    qrCodeImage.src = data.qr_code_url;
-                    modal.style.display = 'block';
-                } else {
-                    // Fallback for other potential structures, though qr_code_url is standard for QRIS
-                    const qrAction = data.actions?.find(action => action.name === 'generate-qr-code');
-                    if (qrAction) {
-                        qrCodeImage.src = qrAction.url;
+                const payButton = event.target;
+                const packageId = payButton.dataset.packageId;
+                const errorContainer = document.getElementById(`payment-error-${packageId}`);
+
+                // Clear previous errors and disable the button
+                if (errorContainer) errorContainer.textContent = '';
+                payButton.disabled = true;
+                payButton.textContent = 'Processing...';
+
+                try {
+                    const monthsInput = document.getElementById(`months-${packageId}`);
+                    const months = monthsInput ? monthsInput.value : 1;
+
+                    const response = await fetch(`/api/v1/payment/subscribe/${packageId}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ months }),
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(data.message || 'Failed to initiate payment');
+                    }
+
+                    if (data.qr_code_url) {
+                        qrCodeImage.src = data.qr_code_url;
                         modal.style.display = 'block';
                     } else {
-                        throw new Error('QR Code URL not found in the response.');
+                        const qrAction = data.actions?.find(action => action.name === 'generate-qr-code');
+                        if (qrAction) {
+                            qrCodeImage.src = qrAction.url;
+                            modal.style.display = 'block';
+                        } else {
+                            throw new Error('QR Code URL not found in the response.');
+                        }
                     }
-                }
 
-            } catch (error) {
-                console.error('Payment error:', error);
-                if(errorContainer) {
-                    errorContainer.textContent = `An error occurred: ${error.message}`;
-                } else {
-                    alert(`An error occurred: ${error.message}`); // Fallback
+                } catch (error) {
+                    console.error('Payment error:', error);
+                    if (errorContainer) {
+                        errorContainer.textContent = `${error.message}`;
+                    } else {
+                        alert(`${error.message}`); // Fallback
+                    }
+                } finally {
+                    payButton.disabled = false;
+                    payButton.textContent = 'Upgrade to Premium';
                 }
-            } finally {
-                payButton.disabled = false;
-                payButton.textContent = 'Upgrade to Premium';
-            }
-        }
+            });
+        });
     </script>
 </body>
 </html>
