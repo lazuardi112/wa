@@ -100,9 +100,12 @@ try {
         if (!req.query.userId) return res.redirect('/register');
         res.render('verify-otp', { query: req.query || {}, userId: req.query.userId });
     });
-    app.get('/', redirectIfLoggedIn, (req, res) => {
-        // This will now correctly redirect to /login if not logged in
-        res.redirect('/dashboard');
+    app.get('/', (req, res) => {
+        // If the user is logged in, redirect to dashboard. Otherwise, to login.
+        if (req.session.user) {
+            return res.redirect('/dashboard');
+        }
+        res.redirect('/login');
     });
 
     console.log("   Routes set up successfully.");
