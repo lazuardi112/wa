@@ -7,9 +7,14 @@ const { createTransaction, handleNotification } = require('../services/midtransS
 const createSubscription = async (req, res) => {
     try {
         const userId = req.session.user.id;
-        const { packageId } = req.params;
+        const { packageId: packageIdStr } = req.params;
         const { months } = req.body; // Get months from request body
         const numMonths = parseInt(months, 10) || 1;
+        const packageId = parseInt(packageIdStr, 10);
+
+        if (isNaN(packageId)) {
+            return res.status(400).json({ message: 'Invalid package ID.' });
+        }
 
         if (numMonths < 1 || numMonths > 12) {
             return res.status(400).json({ message: 'Invalid number of months.' });
