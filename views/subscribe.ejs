@@ -4,10 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Subscribe</title>
-    <!-- Use environment variable for Midtrans URL -->
-    <script type="text/javascript"
-      src="https://app.sandbox.midtrans.com/snap/snap.js"
-      data-client-key="<%= midtransClientKey %>"></script>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #121212; color: white; margin: 0; }
         .sidebar { position: fixed; width: 250px; height: 100%; background: #1e1e1e; padding: 1rem; }
@@ -24,10 +20,18 @@
         ul { list-style: none; padding: 0; text-align: left; }
         li { margin-bottom: 0.5rem; }
         .btn-upgrade { background-color: #28a745; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 4px; font-size: 1rem; cursor: pointer; margin-top: 1.5rem; }
+
+        /* QR Code Modal Styles */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.7); }
+        .modal-content { background-color: #2a2a2a; margin: 10% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 400px; text-align: center; border-radius: 8px; }
+        .close-button { color: #aaa; float: right; font-size: 28px; font-weight: bold; }
+        .close-button:hover, .close-button:focus { color: white; text-decoration: none; cursor: pointer; }
+        #qr-code-image { max-width: 100%; height: auto; margin-top: 1rem; }
     </style>
 </head>
 <body>
     <%- include('partials/sidebar', { active: 'subscribe' }) %>
+
     <div class="main-content">
         <h1>Subscription Plans</h1>
         <div class="packages">
@@ -57,44 +61,67 @@
         </div>
     </div>
 
+    <!-- QR Code Modal -->
+    <div id="qr-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal()">&times;</span>
+            <h2>Scan QR Code to Pay</h2>
+            <p>Please use your e-wallet app to scan the code below.</p>
+            <img id="qr-code-image" src="" alt="QR Code">
+            <p>After payment, your subscription will be updated automatically.</p>
+        </div>
+    </div>
+
     <script type="text/javascript">
+        const modal = document.getElementById('qr-modal');
+        const qrCodeImage = document.getElementById('qr-code-image');
+
+        function closeModal() {
+            modal.style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
+
         async function pay(packageId) {
+            const payButton = event.target;
+            payButton.disabled = true;
+            payButton.textContent = 'Processing...';
+
             try {
                 const monthsInput = document.getElementById(`months-\${packageId}`);
                 const months = monthsInput ? monthsInput.value : 1;
 
                 const response = await fetch(`/api/v1/payment/subscribe/\${packageId}`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ months: months }),
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ months }),
                 });
 
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.message || 'Failed to initiate payment');
-                }
                 const data = await response.json();
 
-                window.snap.pay(data.token, {
-                    onSuccess: function(result){
-                        alert("Payment success!");
-                        window.location.href = '/dashboard';
-                    },
-                    onPending: function(result){
-                        alert("Waiting for your payment!");
-                    },
-                    onError: function(result){
-                        alert("Payment failed!");
-                    },
-                    onClose: function(){
-                        alert('You closed the popup without finishing the payment.');
-                    }
-                });
+                if (!response.ok) {
+                    throw new Error(data.message || 'Failed to initiate payment');
+                }
+
+                // Check if QR code URL is present
+                if (data.actions && data.actions.some(action => action.name === 'generate-qr-code')) {
+                    const qrCodeUrl = data.actions.find(action => action.name === 'generate-qr-code').url;
+                    qrCodeImage.src = qrCodeUrl;
+                    modal.style.display = 'block';
+                } else {
+                    throw new Error('QR Code URL not found in the response.');
+                }
+
             } catch (error) {
                 console.error('Payment error:', error);
                 alert(`An error occurred: \${error.message}`);
+            } finally {
+                payButton.disabled = false;
+                payButton.textContent = 'Upgrade to Premium';
             }
         }
     </script>
