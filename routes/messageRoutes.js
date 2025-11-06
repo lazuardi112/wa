@@ -18,23 +18,37 @@ router.post('/send', upload.single('media'), checkMessageLimit, sendMessage);
 
 // --- API Routes for programmatic access (return JSON) ---
 
+// --- API Routes for programmatic access (return JSON) ---
+
+const apiNotSupportedGet = (req, res) => {
+    res.status(405).json({
+        success: false,
+        message: `Method GET is not allowed for this endpoint. Please use POST to send a message. See the documentation at /api-docs for details.`
+    });
+};
+
 // API route for sending text messages
-router.post('/send-text', checkMessageLimit, (req, res) => {
-    // We pass a messageType so the controller can handle it
-    req.body.messageType = 'text';
-    sendApiMessage(req, res);
-});
+router.route('/send-text')
+    .post(checkMessageLimit, (req, res) => {
+        req.body.messageType = 'text';
+        sendApiMessage(req, res);
+    })
+    .get(apiNotSupportedGet);
 
 // API route for sending images
-router.post('/send-image', upload.single('media'), checkMessageLimit, (req, res) => {
-    req.body.messageType = 'image';
-    sendApiMessage(req, res);
-});
+router.route('/send-image')
+    .post(upload.single('media'), checkMessageLimit, (req, res) => {
+        req.body.messageType = 'image';
+        sendApiMessage(req, res);
+    })
+    .get(apiNotSupportedGet);
 
 // API route for sending documents
-router.post('/send-document', upload.single('media'), checkMessageLimit, (req, res) => {
-    req.body.messageType = 'document';
-    sendApiMessage(req, res);
-});
+router.route('/send-document')
+    .post(upload.single('media'), checkMessageLimit, (req, res) => {
+        req.body.messageType = 'document';
+        sendApiMessage(req, res);
+    })
+    .get(apiNotSupportedGet);
 
 module.exports = router;
