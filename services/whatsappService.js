@@ -146,17 +146,29 @@ async function connectToWhatsApp(instanceId, deviceId) {
                 user.messageCount += 1;
                 await user.save();
 
+                // New logic to handle multi-part messages correctly
+                let textMessage = '';
+                let imageUrl = null;
+
                 for (const res of matchedFlow.response) {
-                    if (res.type === 'image') {
-                        await sock.sendMessage(sender, {
-                            image: { url: res.content }
-                        });
-                    } else {
-                        await sock.sendMessage(sender, { text: res.content });
+                    if (res.type === 'image' && res.content) {
+                        imageUrl = res.content; // Capture the first image URL
+                    } else if (res.type === 'text' && res.content) {
+                        textMessage += res.content + '\n'; // Concatenate text parts
                     }
-                    // Tambahkan jeda singkat antar pesan
-                    await new Promise(resolve => setTimeout(resolve, 500));
                 }
+
+                textMessage = textMessage.trim();
+
+                if (imageUrl) {
+                    await sock.sendMessage(sender, {
+                        image: { url: imageUrl },
+                        caption: textMessage || '' // Use concatenated text as caption
+                    });
+                } else if (textMessage) {
+                    await sock.sendMessage(sender, { text: textMessage });
+                }
+
                 console.log(`[${instanceId}] Bot response sent to ${sender} for prefix "${matchedFlow.prefix}". User message count is now ${user.messageCount}.`);
 
                 // Periksa apakah alur ini memiliki turunan
