@@ -8,7 +8,6 @@ const db = require('../models');
 // @desc    Render the dashboard page
 const renderDashboard = async (req, res) => {
     try {
-        // Fetch dashboard stats
         const deviceCount = await db.Device.count({ where: { userId: req.user.id } });
         const activeSubscription = await db.Transaction.findOne({
             where: { userId: req.user.id, status: 'success' },
@@ -17,32 +16,20 @@ const renderDashboard = async (req, res) => {
 
         const dashboardData = {
             deviceCount,
-            messageCount: req.user.messageCount,
+            messageCount: req.user.messageCount, // Use fresh count from middleware
             subscriptionExpires: activeSubscription?.expiresAt ? new Date(activeSubscription.expiresAt).toLocaleDateString() : 'N/A',
         };
 
-        // Fetch premium package for the upgrade modal
-        const premiumPackage = await db.Package.findOne({ where: { name: 'Premium' } });
-
-        // Throw an error if the premium package isn't found, as it's crucial for the upgrade functionality
-        if (!premiumPackage) {
-            console.error("Critical: Premium package not found in the database.");
-            // We don't send a 500 error to the user, but we prevent rendering the modal
-            // by passing null. The EJS should handle this gracefully.
-        }
-
         res.render('dashboard', {
-            user: req.user,
+            user: req.user, // Use the full, fresh user object
             data: dashboardData,
-            currentPackage: req.package,
-            premiumPackage: premiumPackage // Pass the premium package to the view
+            currentPackage: req.package // Use package from middleware
         });
     } catch (error) {
         console.error('Dashboard Page Error:', error);
         res.status(500).send('Error loading dashboard.');
     }
 };
-
 
 // @desc    Render the devices page
 const renderDevicesPage = async (req, res) => {
