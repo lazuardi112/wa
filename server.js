@@ -90,7 +90,10 @@ try {
         });
     });
 
-    // Public routes (must be defined BEFORE protected routes)
+    // Use the protected router
+    app.use('/', protectedViews);
+
+    // Public routes (must be defined AFTER protected routes to avoid middleware conflicts)
     app.get('/login', redirectIfLoggedIn, (req, res) => res.render('login', { query: req.query || {} }));
     app.get('/register', redirectIfLoggedIn, (req, res) => res.render('register', { query: req.query || {} }));
     app.get('/verify-otp', redirectIfLoggedIn, (req, res) => {
@@ -104,9 +107,6 @@ try {
         }
         res.redirect('/login');
     });
-
-    // Use the protected router
-    app.use('/', protectedViews);
 
     console.log("   Routes set up successfully.");
 

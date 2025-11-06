@@ -56,15 +56,7 @@ module.exports = (sequelize, DataTypes) => {
         key: 'id',
       }
     },
-    packageExpiresAt: DataTypes.DATE,
-    messageCount: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      defaultValue: 0,
-    },
-    lastResetDate: {
-        type: DataTypes.DATE,
-    }
+    packageExpiresAt: DataTypes.DATE
   }, {
     sequelize,
     modelName: 'User',

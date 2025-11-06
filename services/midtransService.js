@@ -3,41 +3,33 @@ const db = require('../models');
 const fs = require('fs');
 const path = require('path');
 
-const midtransConfigFile = path.join(__dirname, '..', 'config', 'midtrans.json');
-
-// Helper function to get Midtrans settings from the database and local file
+// Helper function to get Midtrans settings exclusively from the database
 const getMidtransConfig = async () => {
     try {
-        const serverKey = await db.Setting.findOne({ where: { key: 'midtransServerKey' } });
-        const clientKey = await db.Setting.findOne({ where: { key: 'midtransClientKey' } });
+        const settings = await db.Setting.findAll({
+            where: {
+                key: ['midtransServerKey', 'midtransClientKey', 'midtransEnvironment']
+            }
+        });
 
-        let isProduction = false;
-        if (fs.existsSync(midtransConfigFile)) {
-            const configData = fs.readFileSync(midtransConfigFile, 'utf8');
-            isProduction = JSON.parse(configData).environment === 'production';
-        }
+        const config = {};
+        settings.forEach(setting => {
+            config[setting.key] = setting.value;
+        });
 
-        if (!serverKey?.value || !clientKey?.value) {
-            console.warn("Midtrans keys are not configured in admin settings. Using .env fallback.");
-            return {
-                isProduction, // Still respect the file-based setting
-                serverKey: process.env.MIDTRANS_SERVER_KEY,
-                clientKey: process.env.MIDTRANS_CLIENT_KEY,
-            };
+        if (!config.midtransServerKey || !config.midtransClientKey) {
+            throw new Error("Midtrans server key or client key is not configured in admin settings.");
         }
 
         return {
-            isProduction,
-            serverKey: serverKey.value,
-            clientKey: clientKey.value,
+            isProduction: config.midtransEnvironment === 'production',
+            serverKey: config.midtransServerKey,
+            clientKey: config.midtransClientKey,
         };
     } catch (error) {
-        console.error("Error reading Midtrans config, falling back to .env:", error);
-        return {
-            isProduction: false,
-            serverKey: process.env.MIDTRANS_SERVER_KEY,
-            clientKey: process.env.MIDTRANS_CLIENT_KEY,
-        };
+        console.error("Error reading Midtrans config from database:", error);
+        // In case of a critical error, we prevent the app from proceeding with invalid config.
+        throw new Error("Failed to retrieve Midtrans configuration from database.");
     }
 };
 
@@ -47,7 +39,11 @@ const getMidtransConfig = async () => {
  */
 const createTransaction = async (userId, orderId, amount, durationDays) => {
     const config = await getMidtransConfig();
-    const snap = new midtransClient.Snap(config);
+    const snap = new midtransClient.Snap({
+        isProduction: config.isProduction,
+        serverKey: config.serverKey,
+        clientKey: config.clientKey
+    });
 
     const user = await db.User.findByPk(userId);
     if (!user) {
@@ -86,7 +82,11 @@ const createTransaction = async (userId, orderId, amount, durationDays) => {
  */
 const handleNotification = async (notification) => {
     const config = await getMidtransConfig();
-    const apiClient = new midtransClient.CoreApi(config);
+    const apiClient = new midtransClient.CoreApi({
+        isProduction: config.isProduction,
+        serverKey: config.serverKey,
+        clientKey: config.clientKey
+    });
 
     // Use Core API to verify notification for better security
     const statusResponse = await apiClient.transaction.notification(notification);

@@ -34,10 +34,6 @@ module.exports = {
         type: Sequelize.BOOLEAN,
         defaultValue: false
       },
-      isBlocked: {
-        type: Sequelize.BOOLEAN,
-        defaultValue: false
-      },
       packageId: {
         type: Sequelize.INTEGER,
         references: {
@@ -52,7 +48,6 @@ module.exports = {
       },
       messageCount: {
         type: Sequelize.INTEGER,
-        allowNull: false,
         defaultValue: 0
       },
       lastResetDate: {
