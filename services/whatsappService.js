@@ -160,16 +160,28 @@ async function connectToWhatsApp(instanceId, deviceId) {
 
                 textMessage = textMessage.trim();
 
+                const messagePayload = {};
                 if (imageUrl) {
-                    await sock.sendMessage(sender, {
-                        image: { url: imageUrl },
-                        caption: textMessage || '' // Use concatenated text as caption
-                    });
+                    messagePayload.image = { url: imageUrl };
+                    if (textMessage) {
+                        messagePayload.caption = textMessage;
+                    }
                 } else if (textMessage) {
-                    await sock.sendMessage(sender, { text: textMessage });
+                    messagePayload.text = textMessage;
                 }
 
-                console.log(`[${instanceId}] Bot response sent to ${sender} for prefix "${matchedFlow.prefix}". User message count is now ${user.messageCount}.`);
+                if (Object.keys(messagePayload).length > 0) {
+                    console.log(`[${instanceId}] Preparing to send message to ${sender}. Payload:`, JSON.stringify(messagePayload, null, 2));
+                    try {
+                        await sock.sendMessage(sender, messagePayload);
+                        console.log(`[${instanceId}] Bot response sent successfully to ${sender} for prefix "${matchedFlow.prefix}". User message count is now ${user.messageCount}.`);
+                    } catch (sendError) {
+                        console.error(`[${instanceId}] CRITICAL: Failed to send message via Baileys. Prefix: "${matchedFlow.prefix}". Payload:`, JSON.stringify(messagePayload), 'Error:', sendError);
+                    }
+                } else {
+                     console.warn(`[${instanceId}] No valid content to send for prefix "${matchedFlow.prefix}".`);
+                }
+
 
                 // Periksa apakah alur ini memiliki turunan
                 const children = await db.BotFlow.findAll({ where: { parentId: matchedFlow.id, isEnabled: true } });

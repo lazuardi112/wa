@@ -56,15 +56,7 @@ module.exports = (sequelize, DataTypes) => {
         key: 'id',
       }
     },
-    packageExpiresAt: DataTypes.DATE,
-    apiKey: {
-        type: DataTypes.STRING,
-        unique: true,
-    },
-    apiAccessStatus: {
-        type: DataTypes.ENUM('none', 'requested', 'approved'),
-        defaultValue: 'none',
-    }
+    packageExpiresAt: DataTypes.DATE
   }, {
     sequelize,
     modelName: 'User',
