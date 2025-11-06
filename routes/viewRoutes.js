@@ -11,6 +11,10 @@ const {
     renderHistoryPage,
 } = require('../controllers/viewController');
 const { protect, redirectIfLoggedIn } = require('../middleware/authMiddleware');
+const { userAuth } = require('../middleware/userAuth');
+
+// Apply userAuth middleware to all protected routes
+router.use(protect, userAuth);
 
 // Static public pages
 router.get('/login', redirectIfLoggedIn, (req, res) => res.render('login', { query: req.query }));
@@ -21,14 +25,14 @@ router.get('/verify-otp', redirectIfLoggedIn, (req, res) => {
 });
 
 // Protected pages
-router.get('/dashboard', protect, renderDashboard);
-router.get('/devices', protect, renderDevicesPage);
-router.get('/messaging', protect, renderMessagingPage);
-router.get('/bot', protect, renderBotPage);
-router.get('/bot/edit/:id', protect, renderEditBotPage);
-router.get('/api-docs', protect, renderApiDocsPage);
-router.get('/subscribe', protect, renderSubscribePage);
-router.get('/history', protect, renderHistoryPage);
+router.get('/dashboard', renderDashboard);
+router.get('/devices', renderDevicesPage);
+router.get('/messaging', renderMessagingPage);
+router.get('/bot', renderBotPage);
+router.get('/bot/edit/:id', renderEditBotPage);
+router.get('/api-docs', renderApiDocsPage);
+router.get('/subscribe', renderSubscribePage);
+router.get('/history', renderHistoryPage);
 
 // Logout
 router.get('/logout', (req, res) => {

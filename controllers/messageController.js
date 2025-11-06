@@ -88,10 +88,13 @@ const sendMessage = async (req, res) => {
             }
         }
 
-        // Increment the user's message count by the number of successful sends
+        // Atomically increment the user's message count
         if (successfulSends > 0) {
-            user.messageCount += successfulSends;
-            await user.save();
+            await db.User.increment('messageCount', {
+                by: successfulSends,
+                where: { id: user.id }
+            });
+            console.log(`[MessageController] Incremented messageCount by ${successfulSends} for user ${user.email}.`);
         }
 
         // Redirect back to the messaging page with a status message
