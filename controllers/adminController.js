@@ -1,22 +1,4 @@
 const db = require('../models');
-const fs = require('fs');
-const path = require('path');
-
-const midtransConfigFile = path.join(__dirname, '..', 'config', 'midtrans.json');
-
-// Helper to read midtrans env config
-const getMidtransEnv = () => {
-    try {
-        if (fs.existsSync(midtransConfigFile)) {
-            const data = fs.readFileSync(midtransConfigFile, 'utf8');
-            return JSON.parse(data);
-        }
-    } catch (error) {
-        console.error("Error reading midtrans config file:", error);
-    }
-    // Default to sandbox if file doesn't exist or is invalid
-    return { environment: 'sandbox' };
-};
 
 // @desc    Show Admin Login Page
 // @route   GET /admin/login
@@ -95,8 +77,10 @@ const showSettingsPage = async (req, res) => {
             return acc;
         }, {});
 
-        // Add midtrans env to settings
-        settings.midtransEnv = getMidtransEnv().environment;
+        // Default to 'sandbox' if not set in DB
+        if (!settings.midtransEnvironment) {
+            settings.midtransEnvironment = 'sandbox';
+        }
 
         res.render('admin/settings', {
             settings,
@@ -115,19 +99,17 @@ const showSettingsPage = async (req, res) => {
 // @route   POST /api/v1/admin/settings
 // @access  Private (Admin)
 const saveSettings = async (req, res) => {
-    const { midtransServerKey, midtransClientKey, midtransNotificationUrl, midtransEnv } = req.body;
+    const { midtransServerKey, midtransClientKey, midtransNotificationUrl, midtransEnvironment } = req.body;
     try {
-        // Save DB settings
+        // Save all settings to the database
         await db.Setting.upsert({ key: 'midtransServerKey', value: midtransServerKey });
         await db.Setting.upsert({ key: 'midtransClientKey', value: midtransClientKey });
         await db.Setting.upsert({ key: 'midtransNotificationUrl', value: midtransNotificationUrl });
-
-        // Save file-based setting
-        const midtransConfig = { environment: midtransEnv === 'production' ? 'production' : 'sandbox' };
-        fs.writeFileSync(midtransConfigFile, JSON.stringify(midtransConfig, null, 2));
+        await db.Setting.upsert({ key: 'midtransEnvironment', value: midtransEnvironment });
 
         res.redirect('/admin/settings?message=Midtrans settings saved successfully!');
     } catch (error) {
+        console.error("Error saving Midtrans settings:", error);
         res.status(500).send("Error saving settings");
     }
 };

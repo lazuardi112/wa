@@ -103,6 +103,15 @@ async function connectToWhatsApp(instanceId, deviceId) {
 
             const userPackage = subscription.package;
 
+            // Reset daily message count if needed
+            const today = new Date().setHours(0, 0, 0, 0);
+            const lastReset = user.lastResetDate ? new Date(user.lastResetDate).setHours(0, 0, 0, 0) : null;
+            if (lastReset !== today) {
+                user.messageCount = 0;
+                user.lastResetDate = new Date();
+                await user.save();
+            }
+
             // Check if user has messages left before processing bot logic
             if (user.messageCount >= userPackage.messageLimit) {
                 console.log(`[${instanceId}] User ${user.email} has reached their message limit. Bot response not sent.`);
@@ -130,20 +139,12 @@ async function connectToWhatsApp(instanceId, deviceId) {
                 });
             }
 
-            const matchedFlow = flowsToSearch.find(flow => messageText.startsWith(flow.prefix.toLowerCase()));
+            const matchedFlow = flowsToSearch.find(flow => messageText === flow.prefix.toLowerCase());
 
             if (matchedFlow) {
-                // Handle daily reset before incrementing
-                const today = new Date().setHours(0, 0, 0, 0);
-                const lastReset = user.lastResetDate ? new Date(user.lastResetDate).setHours(0, 0, 0, 0) : null;
-
-                if (lastReset !== today) {
-                    await db.User.update(
-                        { messageCount: 0, lastResetDate: new Date() },
-                        { where: { id: user.id } }
-                    );
-                    console.log(`[Bot] Reset daily message count for user ${user.email}.`);
-                }
+                // Atomically increment message count before sending
+                await db.User.increment('messageCount', { by: 1, where: { id: user.id } });
+                console.log(`[Bot] Incremented messageCount by 1 for user ${user.email}.`);
 
                 // New logic to handle multi-part messages correctly
                 let textMessage = '';
@@ -170,14 +171,10 @@ async function connectToWhatsApp(instanceId, deviceId) {
                 }
 
                 if (Object.keys(messagePayload).length > 0) {
-                    // Atomically increment message count ONLY when there's a message to send
-                    await db.User.increment('messageCount', { by: 1, where: { id: user.id } });
-                    console.log(`[Bot] Incremented messageCount by 1 for user ${user.email}.`);
-
                     console.log(`[${instanceId}] Preparing to send message to ${sender}. Payload:`, JSON.stringify(messagePayload, null, 2));
                     try {
                         await sock.sendMessage(sender, messagePayload);
-                        console.log(`[${instanceId}] Bot response sent successfully to ${sender} for prefix "${matchedFlow.prefix}".`);
+                        console.log(`[${instanceId}] Bot response sent successfully to ${sender} for prefix "${matchedFlow.prefix}". User message count is now ${user.messageCount}.`);
                     } catch (sendError) {
                         console.error(`[${instanceId}] CRITICAL: Failed to send message via Baileys. Prefix: "${matchedFlow.prefix}". Payload:`, JSON.stringify(messagePayload), 'Error:', sendError);
                     }

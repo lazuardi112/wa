@@ -28,13 +28,6 @@
 <body>
     <%- include('partials/sidebar', { active: 'messaging' }) %>
     <div class="main-content">
-        <% if (locals.query && query.status === 'error' && query.msg && query.msg.includes('limit')) { %>
-            <div class="card" style="background-color: #dc3545; margin-bottom: 1.5rem;">
-                <h3 style="margin-top: 0;">Message Limit Reached</h3>
-                <p><%= query.msg %></p>
-                <a href="/subscribe" style="background-color: #28a745; color: white; padding: 0.75rem 1.5rem; border-radius: 4px; text-decoration: none; display: inline-block;">Upgrade Plan</a>
-            </div>
-        <% } %>
         <h1>Send New Message</h1>
         <div class="card">
             <div class="tabs">

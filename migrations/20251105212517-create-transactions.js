@@ -1,12 +1,28 @@
 'use strict';
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    await queryInterface.createTable('BotFlows', {
+    await queryInterface.createTable('Transactions', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
+      },
+      orderId: {
+        type: Sequelize.STRING,
+        allowNull: false,
+        unique: true
+      },
+      amount: {
+        type: Sequelize.INTEGER,
+        allowNull: false
+      },
+      status: {
+        type: Sequelize.ENUM('pending', 'success', 'failed', 'expired'),
+        defaultValue: 'pending'
+      },
+      paymentGatewayData: {
+        type: Sequelize.JSON
       },
       userId: {
         type: Sequelize.INTEGER,
@@ -18,33 +34,18 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      deviceId: {
+      packageId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'Devices',
+          model: 'Packages',
           key: 'id'
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      prefix: {
-        type: Sequelize.STRING
-      },
-      response: {
-        type: Sequelize.JSON
-      },
-      isEnabled: {
-        type: Sequelize.BOOLEAN
-      },
-      parentId: {
-        type: Sequelize.INTEGER,
-        references: {
-          model: 'BotFlows',
-          key: 'id'
-        },
-        onUpdate: 'CASCADE',
-        onDelete: 'SET NULL'
+      expiresAt: {
+        type: Sequelize.DATE
       },
       createdAt: {
         allowNull: false,
@@ -57,6 +58,6 @@ module.exports = {
     });
   },
   down: async (queryInterface, Sequelize) => {
-    await queryInterface.dropTable('BotFlows');
+    await queryInterface.dropTable('Transactions');
   }
 };
