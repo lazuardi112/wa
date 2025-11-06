@@ -39,43 +39,14 @@ const sendMessage = async (req, res) => {
             return res.status(403).json({ message: 'You do not own this device.' });
         }
         if (device.status !== 'connected') {
-             return res.redirect('/messaging?status=error&msg=Device%20is%20not%20connected.');
+            return res.status(400).json({ message: 'Device is not connected.' });
         }
-
-        // --- Start of Message Limit Logic ---
-        const userWithPackage = await db.User.findByPk(user.id, {
-            include: { model: db.Package, as: 'package' }
-        });
-
-        const userPackage = userWithPackage.package;
-
-        const today = new Date().setHours(0, 0, 0, 0);
-        const lastReset = userWithPackage.lastResetDate ? new Date(userWithPackage.lastResetDate).setHours(0, 0, 0, 0) : null;
-
-        let currentMessageCount = userWithPackage.messageCount;
-
-        // Reset count if it's a new day
-        if (lastReset !== today) {
-            await userWithPackage.update({ messageCount: 0, lastResetDate: new Date() });
-            currentMessageCount = 0;
-            console.log(`[MessageController] Reset daily message count for user ${user.email}.`);
-        }
-
-        const recipientList = numbers.split(',').map(n => n.trim()).filter(n => n);
-        const messagesToSendCount = recipientList.length;
-        const messagesLeft = userPackage.messageLimit - currentMessageCount;
-
-        if (messagesLeft <= 0) {
-            return res.redirect('/messaging?status=error&msg=You%20have%20reached%20your%20daily%20message%20limit.');
-        }
-
-        const allowedRecipients = recipientList.slice(0, messagesLeft);
-        // --- End of Message Limit Logic ---
 
         const sock = getClient(device.instanceId);
-        let successfulSends = 0;
+        const recipientList = numbers.split(',').map(n => n.trim()).filter(n => n);
 
-        for (const number of allowedRecipients) {
+        let successfulSends = 0;
+        for (const number of recipientList) {
             try {
                 const jid = formatNumber(number);
                 let sentMessage;
@@ -119,7 +90,10 @@ const sendMessage = async (req, res) => {
 
         // Atomically increment the user's message count
         if (successfulSends > 0) {
-            await userWithPackage.increment('messageCount', { by: successfulSends });
+            await db.User.increment('messageCount', {
+                by: successfulSends,
+                where: { id: user.id }
+            });
             console.log(`[MessageController] Incremented messageCount by ${successfulSends} for user ${user.email}.`);
         }
 
@@ -127,11 +101,7 @@ const sendMessage = async (req, res) => {
         const status = successfulSends > 0 ? 'success' : 'error';
         const msg = successfulSends > 0 ? `Successfully sent ${successfulSends} of ${recipientList.length} messages.` : 'Failed to send messages.';
         // We will use query params for feedback on redirect. A flash message system would be better.
-        const finalRedirectMsg = messagesToSendCount > allowedRecipients.length
-            ? `${msg} Some messages were not sent due to daily limit.`
-            : msg;
-
-        res.redirect(`/messaging?status=${status}&msg=${encodeURIComponent(finalRedirectMsg)}`);
+        res.redirect(`/messaging?status=${status}&msg=${encodeURIComponent(msg)}`);
 
     } catch (error) {
         console.error(`Failed to send message:`, error);
