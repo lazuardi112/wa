@@ -49,6 +49,11 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.BOOLEAN,
       defaultValue: false,
     },
+    messageLimit: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 50
+    },
     packageId: {
       type: DataTypes.INTEGER,
       references: {

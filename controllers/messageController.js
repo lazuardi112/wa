@@ -34,6 +34,25 @@ const sendMessage = async (req, res) => {
     }
 
     try {
+        // --- Message Limit Check ---
+        const today = new Date().setHours(0, 0, 0, 0);
+        const lastReset = user.lastResetDate ? new Date(user.lastResetDate).setHours(0, 0, 0, 0) : null;
+
+        if (lastReset !== today) {
+            // Reset count if it's a new day
+            user.messageCount = 0;
+            user.lastResetDate = new Date();
+            await user.save();
+            console.log(`[MessageController] Reset daily message count for user ${user.email}.`);
+        }
+
+        const recipientList = numbers.split(',').map(n => n.trim()).filter(n => n);
+        if (user.messageCount + recipientList.length > user.messageLimit) {
+            const msg = `Sending ${recipientList.length} messages would exceed your daily limit of ${user.messageLimit}.`;
+            return res.redirect(`/messaging?status=error&msg=${encodeURIComponent(msg)}`);
+        }
+        // --- End of Check ---
+
         const device = await db.Device.findOne({ where: { id: deviceId, userId: user.id } });
         if (!device) {
             return res.status(403).json({ message: 'You do not own this device.' });
