@@ -37,7 +37,7 @@ const getMidtransConfig = async () => {
 /**
  * Create a new Midtrans Snap transaction.
  */
-const createTransaction = async (userId, orderId, amount) => {
+const createTransaction = async (userId, orderId, amount, durationDays) => {
     const config = await getMidtransConfig();
     const snap = new midtransClient.Snap(config);
 
@@ -60,6 +60,14 @@ const createTransaction = async (userId, orderId, amount) => {
             secure: true,
         },
     };
+
+    // Check for notification URL override from settings
+    const notificationUrlSetting = await db.Setting.findOne({ where: { key: 'midtransNotificationUrl' } });
+    if (notificationUrlSetting && notificationUrlSetting.value) {
+        parameter.callbacks = {
+            finish: notificationUrlSetting.value
+        };
+    }
 
     const transaction = await snap.createTransaction(parameter);
     return transaction.token;
@@ -108,7 +116,12 @@ async function updateTransactionAndUser(transaction, status) {
         return;
     }
 
-    const durationDays = transaction.package.durationDays;
+    // Calculate the new expiry date based on the total duration of the purchase
+    const totalAmount = transaction.amount;
+    const pricePerMonth = transaction.package.price;
+    const numMonths = (pricePerMonth > 0) ? (totalAmount / pricePerMonth) : 1;
+    const durationDays = transaction.package.durationDays * numMonths;
+
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + durationDays);
 

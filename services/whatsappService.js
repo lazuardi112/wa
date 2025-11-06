@@ -236,10 +236,35 @@ function getClient(instanceId) {
     return sessions.get(instanceId)?.sock;
 }
 
+/**
+ * Send a message using a specific client instance.
+ * @param {string} instanceId - The instance ID of the sender device.
+ * @param {string} to - The recipient's phone number.
+ * @param {string} message - The message text.
+ */
+const sendMessage = async (instanceId, to, message) => {
+    const client = getClient(instanceId);
+    if (!client) {
+        throw new Error('WhatsApp client not found for this instance.');
+    }
+
+    // Format number
+    let formattedNumber = to.replace(/\D/g, '');
+    if (formattedNumber.startsWith('0')) {
+        formattedNumber = '62' + formattedNumber.slice(1);
+    }
+    if (!formattedNumber.endsWith('@s.whatsapp.net')) {
+        formattedNumber += '@s.whatsapp.net';
+    }
+
+    await client.sendMessage(formattedNumber, { text: message });
+};
+
 module.exports = {
     generateQRCode,
     deleteSession,
     reconnectSession,
     reconnectExistingSessions,
     getClient,
+    sendMessage, // Export the new function
 };
