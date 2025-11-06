@@ -67,6 +67,22 @@ try {
     app.use('/admin', require('./routes/adminViewRoutes'));
 
     // --- Main User View Routes ---
+
+    // Public routes must be defined BEFORE protected routes
+    app.get('/login', redirectIfLoggedIn, (req, res) => res.render('login', { query: req.query || {} }));
+    app.get('/register', redirectIfLoggedIn, (req, res) => res.render('register', { query: req.query || {} }));
+    app.get('/verify-otp', redirectIfLoggedIn, (req, res) => {
+        if (!req.query.userId) return res.redirect('/register');
+        res.render('verify-otp', { query: req.query || {}, userId: req.query.userId });
+    });
+    app.get('/', (req, res) => {
+        // If the user is logged in, redirect to dashboard. Otherwise, to login.
+        if (req.session.user) {
+            return res.redirect('/dashboard');
+        }
+        res.redirect('/login');
+    });
+
     // Create a separate router for protected view routes
     const protectedViews = express.Router();
     protectedViews.use(protectView, userAuth); // Apply protection to this entire router
@@ -90,23 +106,8 @@ try {
         });
     });
 
-    // Use the protected router
+    // Use the protected router for all subsequent routes
     app.use('/', protectedViews);
-
-    // Public routes (must be defined AFTER protected routes to avoid middleware conflicts)
-    app.get('/login', redirectIfLoggedIn, (req, res) => res.render('login', { query: req.query || {} }));
-    app.get('/register', redirectIfLoggedIn, (req, res) => res.render('register', { query: req.query || {} }));
-    app.get('/verify-otp', redirectIfLoggedIn, (req, res) => {
-        if (!req.query.userId) return res.redirect('/register');
-        res.render('verify-otp', { query: req.query || {}, userId: req.query.userId });
-    });
-    app.get('/', (req, res) => {
-        // If the user is logged in, redirect to dashboard. Otherwise, to login.
-        if (req.session.user) {
-            return res.redirect('/dashboard');
-        }
-        res.redirect('/login');
-    });
 
     console.log("   Routes set up successfully.");
 
