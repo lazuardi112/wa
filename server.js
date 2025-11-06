@@ -52,7 +52,12 @@ try {
     );
     console.log("   Session store configured.");
 
-    // --- 6. Route Setup ---
+    // --- 6. Public Webhook Route ---
+    // This must be defined before any authentication middleware
+    const { handleMidtransNotification } = require('./controllers/paymentController');
+    app.post('/notif/midtrans', handleMidtransNotification);
+
+    // --- 7. Route Setup ---
     console.log("6. Setting up routes...");
     // API Routes (already protected internally where needed)
     app.use('/api/v1/auth', require('./routes/authRoutes'));

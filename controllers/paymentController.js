@@ -30,7 +30,7 @@ const createSubscription = async (req, res) => {
         const totalDurationDays = packageToBuy.durationDays * numMonths;
 
         // Create a pending transaction record
-        await db.Transaction.create({
+        const transaction = await db.Transaction.create({
             userId,
             packageId,
             orderId,
@@ -39,6 +39,10 @@ const createSubscription = async (req, res) => {
         });
 
         const transactionResponse = await createTransaction(userId, orderId, totalAmount);
+
+        // Save the full response from Midtrans to the transaction record
+        await transaction.update({ paymentGatewayData: transactionResponse });
+
         res.status(200).json(transactionResponse);
     } catch (error) {
         console.error("Payment Error:", error);
