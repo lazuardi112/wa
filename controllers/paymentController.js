@@ -33,8 +33,8 @@ const createSubscription = async (req, res) => {
             status: 'pending',
         });
 
-        const token = await createTransaction(userId, orderId, totalAmount, totalDurationDays);
-        res.status(200).json({ token });
+        const transactionResponse = await createTransaction(userId, orderId, totalAmount);
+        res.status(200).json(transactionResponse);
     } catch (error) {
         console.error("Payment Error:", error);
         res.status(500).json({ message: 'Failed to create transaction.' });

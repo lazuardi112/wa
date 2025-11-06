@@ -1,95 +1,93 @@
+const axios = require('axios');
 const midtransClient = require('midtrans-client');
 const db = require('../models');
-const fs = require('fs');
-const path = require('path');
 
-const midtransConfigFile = path.join(__dirname, '..', 'config', 'midtrans.json');
-
-// Helper function to get Midtrans settings from the database and local file
+// Helper function to get Midtrans settings from the database
 const getMidtransConfig = async () => {
     try {
-        const serverKey = await db.Setting.findOne({ where: { key: 'midtransServerKey' } });
-        const clientKey = await db.Setting.findOne({ where: { key: 'midtransClientKey' } });
+        const serverKeySetting = await db.Setting.findOne({ where: { key: 'midtransServerKey' } });
+        const isProductionSetting = await db.Setting.findOne({ where: { key: 'midtransIsProduction' } });
+        const notificationUrlSetting = await db.Setting.findOne({ where: { key: 'midtransNotificationUrl' } });
 
-        let isProduction = false;
-        if (fs.existsSync(midtransConfigFile)) {
-            const configData = fs.readFileSync(midtransConfigFile, 'utf8');
-            isProduction = JSON.parse(configData).environment === 'production';
-        }
 
-        if (!serverKey?.value || !clientKey?.value) {
-            console.warn("Midtrans keys are not configured in admin settings. Using .env fallback.");
-            return {
-                isProduction, // Still respect the file-based setting
-                serverKey: process.env.MIDTRANS_SERVER_KEY,
-                clientKey: process.env.MIDTRANS_CLIENT_KEY,
-            };
+        const isProduction = isProductionSetting ? (isProductionSetting.value === 'true' || isProductionSetting.value === 1) : false;
+        const serverKey = serverKeySetting ? serverKeySetting.value : process.env.MIDTRANS_SERVER_KEY;
+        const notificationUrl = notificationUrlSetting ? notificationUrlSetting.value : null;
+
+
+        if (!serverKey) {
+            throw new Error("Midtrans Server Key is not configured.");
         }
 
         return {
             isProduction,
-            serverKey: serverKey.value,
-            clientKey: clientKey.value,
+            serverKey,
+            notificationUrl,
         };
     } catch (error) {
-        console.error("Error reading Midtrans config, falling back to .env:", error);
-        return {
-            isProduction: false,
-            serverKey: process.env.MIDTRANS_SERVER_KEY,
-            clientKey: process.env.MIDTRANS_CLIENT_KEY,
-        };
+        console.error("Error reading Midtrans config:", error);
+        throw error; // Re-throw the error to be caught by the caller
     }
 };
 
 
 /**
- * Create a new Midtrans Snap transaction.
+ * Create a new Midtrans Core API QRIS transaction.
  */
-const createTransaction = async (userId, orderId, amount, durationDays) => {
+const createTransaction = async (userId, orderId, amount) => {
     const config = await getMidtransConfig();
-    const snap = new midtransClient.Snap(config);
 
-    const user = await db.User.findByPk(userId);
-    if (!user) {
-        throw new Error('User not found');
+    const url = config.isProduction
+        ? 'https://api.midtrans.com/v2/charge'
+        : 'https://api.sandbox.midtrans.com/v2/charge';
+
+    const headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': `Basic ${Buffer.from(config.serverKey).toString('base64')}`
+    };
+
+    // Add custom notification URL if it exists in settings
+    if (config.notificationUrl) {
+        headers['X-Append-Notification'] = config.notificationUrl;
     }
 
-    const parameter = {
+    const body = {
+        payment_type: 'qris',
         transaction_details: {
             order_id: orderId,
             gross_amount: amount,
         },
-        customer_details: {
-            first_name: user.name,
-            email: user.email,
-            phone: user.whatsappNumber,
-        },
-        credit_card: {
-            secure: true,
-        },
+        // In the future, we could add acquirer selection if needed
+        // qris: {
+        //     acquirer: 'gopay'
+        // }
     };
 
-    // Check for notification URL override from settings
-    const notificationUrlSetting = await db.Setting.findOne({ where: { key: 'midtransNotificationUrl' } });
-    if (notificationUrlSetting && notificationUrlSetting.value) {
-        parameter.callbacks = {
-            finish: notificationUrlSetting.value
-        };
+    try {
+        const response = await axios.post(url, body, { headers });
+        return response.data; // Return the full response from Midtrans
+    } catch (error) {
+        console.error('Midtrans API request failed:', error.response ? error.response.data : error.message);
+        throw new Error('Failed to create Midtrans transaction.');
     }
-
-    const transaction = await snap.createTransaction(parameter);
-    return transaction.token;
 };
+
 
 /**
  * Handle incoming Midtrans notifications.
  */
 const handleNotification = async (notification) => {
+    // We need a CoreApi instance to validate the notification signature
     const config = await getMidtransConfig();
-    const apiClient = new midtransClient.CoreApi(config);
+    const coreApi = new midtransClient.CoreApi({
+        isProduction: config.isProduction,
+        serverKey: config.serverKey,
+        clientKey: '' // Client key is not needed for server-side validation
+    });
 
     // Use Core API to verify notification for better security
-    const statusResponse = await apiClient.transaction.notification(notification);
+    const statusResponse = await coreApi.transaction.notification(notification);
     const orderId = statusResponse.order_id;
     const transactionStatus = statusResponse.transaction_status;
     const fraudStatus = statusResponse.fraud_status;
