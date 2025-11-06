@@ -6,20 +6,39 @@ const db = require('../models');
 const renderDashboard = async (req, res) => {
     try {
         const userId = req.session.user.id;
-        const [user, deviceCount] = await Promise.all([
-            db.User.findByPk(userId),
-            db.Device.count({ where: { userId } }),
-            // db.Subscription.findOne({ where: { userId }, order: [['expiresAt', 'DESC']] }) // Removed temporarily
-        ]);
+
+        // Fetch user and devices
+        const user = await db.User.findByPk(userId);
+        const deviceCount = await db.Device.count({ where: { userId } });
+
+        // Determine user's current package
+        const activeSubscription = await db.Transaction.findOne({
+            where: { userId, status: 'success' },
+            order: [['expiresAt', 'DESC']]
+        });
+
+        let currentPackage;
+        if (activeSubscription && new Date() < new Date(activeSubscription.expiresAt)) {
+            currentPackage = await db.Package.findByPk(activeSubscription.packageId);
+        } else {
+            currentPackage = await db.Package.findOne({ where: { name: 'Free' } });
+        }
+
+        if (!currentPackage) {
+             return res.status(500).send('Error: Default package not found.');
+        }
 
         const dashboardData = {
             deviceCount: deviceCount || 0,
-            messageCount: user?.messageCount || 0,
-            messageLimit: user?.messageLimit || 50, // Assuming a default or user-specific limit
-            subscriptionExpires: 'N/A', // Hardcoded temporarily
+            messageCount: user?.messageCount || 0, // Get the latest count
+            subscriptionExpires: activeSubscription?.expiresAt ? new Date(activeSubscription.expiresAt).toLocaleDateString() : 'N/A',
         };
 
-        res.render('dashboard', { user: req.session.user, data: dashboardData });
+        res.render('dashboard', {
+            user: req.session.user,
+            data: dashboardData,
+            currentPackage // Pass the full package object
+        });
     } catch (error) {
         console.error('Dashboard Page Error:', error);
         res.status(500).send('Error loading dashboard.');

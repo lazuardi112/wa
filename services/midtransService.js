@@ -1,32 +1,40 @@
 const midtransClient = require('midtrans-client');
 const db = require('../models');
+const fs = require('fs');
+const path = require('path');
 
-// Helper function to get Midtrans settings from the database
+const midtransConfigFile = path.join(__dirname, '..', 'config', 'midtrans.json');
+
+// Helper function to get Midtrans settings from the database and local file
 const getMidtransConfig = async () => {
     try {
         const serverKey = await db.Setting.findOne({ where: { key: 'midtransServerKey' } });
         const clientKey = await db.Setting.findOne({ where: { key: 'midtransClientKey' } });
 
+        let isProduction = false;
+        if (fs.existsSync(midtransConfigFile)) {
+            const configData = fs.readFileSync(midtransConfigFile, 'utf8');
+            isProduction = JSON.parse(configData).environment === 'production';
+        }
+
         if (!serverKey?.value || !clientKey?.value) {
-            console.warn("Midtrans keys are not configured in the admin settings.");
-            // Fallback to environment variables if settings are not in DB
+            console.warn("Midtrans keys are not configured in admin settings. Using .env fallback.");
             return {
-                isProduction: process.env.MIDTRANS_IS_PRODUCTION === 'true',
+                isProduction, // Still respect the file-based setting
                 serverKey: process.env.MIDTRANS_SERVER_KEY,
                 clientKey: process.env.MIDTRANS_CLIENT_KEY,
             };
         }
 
         return {
-            isProduction: process.env.MIDTRANS_IS_PRODUCTION === 'true', // Still use env for production flag
+            isProduction,
             serverKey: serverKey.value,
             clientKey: clientKey.value,
         };
     } catch (error) {
-        console.error("Could not fetch Midtrans config from DB, falling back to ENV.", error);
-        // Fallback in case of DB error
+        console.error("Error reading Midtrans config, falling back to .env:", error);
         return {
-            isProduction: process.env.MIDTRANS_IS_PRODUCTION === 'true',
+            isProduction: false,
             serverKey: process.env.MIDTRANS_SERVER_KEY,
             clientKey: process.env.MIDTRANS_CLIENT_KEY,
         };

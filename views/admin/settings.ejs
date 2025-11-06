@@ -33,6 +33,13 @@
             <h2>Midtrans Payment Gateway</h2>
             <form action="/api/v1/admin/settings" method="POST">
                 <div class="form-group">
+                    <label for="midtransEnv">Environment</label>
+                    <select id="midtransEnv" name="midtransEnv">
+                        <option value="sandbox" <%= settings.midtransEnv === 'sandbox' ? 'selected' : '' %>>Sandbox</option>
+                        <option value="production" <%= settings.midtransEnv === 'production' ? 'selected' : '' %>>Production</option>
+                    </select>
+                </div>
+                <div class="form-group">
                     <label for="midtransServerKey">Server Key</label>
                     <input type="text" id="midtransServerKey" name="midtransServerKey" value="<%= settings.midtransServerKey %>">
                 </div>
