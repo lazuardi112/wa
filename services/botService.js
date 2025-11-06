@@ -1,16 +1,16 @@
 const db = require('../models');
-const { getClient } = require('./whatsappService');
 
 // Maps to track conversation state
 const conversationState = new Map();
 
 /**
  * Processes an incoming WhatsApp message for bot logic.
+ * @param {object} sock The Baileys socket instance.
  * @param {object} msg The message object from Baileys.
  * @param {string} instanceId The instance ID of the device that received the message.
  * @param {string} deviceId The database ID of the device.
  */
-const processMessage = async (msg, instanceId, deviceId) => {
+const processMessage = async (sock, msg, instanceId, deviceId) => {
     if (!msg.message || msg.key.fromMe) return;
 
     const sender = msg.key.remoteJid;
@@ -19,8 +19,6 @@ const processMessage = async (msg, instanceId, deviceId) => {
     if (!messageText) return;
 
     const currentState = conversationState.get(sender);
-    const sock = getClient(instanceId);
-    if (!sock) return; // Cannot send reply if socket is not found
 
     try {
         const device = await db.Device.findOne({ where: { id: deviceId } });
@@ -44,7 +42,6 @@ const processMessage = async (msg, instanceId, deviceId) => {
         const today = new Date().setHours(0, 0, 0, 0);
         const lastReset = user.lastResetDate ? new Date(user.lastResetDate).setHours(0, 0, 0, 0) : null;
 
-        // Check message limit BEFORE the reset logic
         if (lastReset === today && user.messageCount >= userPackage.messageLimit) {
             console.log(`[BotService] User ${user.email} has reached their message limit. Bot response not sent.`);
             return;
