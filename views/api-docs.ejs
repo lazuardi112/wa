@@ -19,6 +19,11 @@
         pre { background: #2c2c2c; padding: 1rem; border-radius: 4px; white-space: pre-wrap; word-wrap: break-word; }
         code { font-family: 'Courier New', Courier, monospace; }
         .endpoint { background: #333; padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: bold; }
+        .tabs { display: flex; border-bottom: 1px solid #333; margin-bottom: 1rem; }
+        .tab-button { background: none; border: none; color: white; padding: 1rem; cursor: pointer; font-size: 1rem; }
+        .tab-button.active { color: #007bff; border-bottom: 2px solid #007bff; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
     </style>
 </head>
 <body>
@@ -33,7 +38,10 @@
                     <p><strong>Your new API Key:</strong> Please save this key. It will not be shown again.</p>
                     <code><%= apiKey %></code>
                 <% } else if (apiKeyExists) { %>
-                    <p>You have already generated an API key. For security reasons, it cannot be displayed again. If you have lost it, you will need to contact support to have it revoked.</p>
+                     <p>You already have an API key. For security, it's shown only once. If lost, you must generate a new one, which will invalidate the old one.</p>
+                     <form action="/api/v1/user/generate-apikey" method="POST" onsubmit="return confirm('Are you sure? Generating a new key will invalidate your old one.');">
+                        <button type="submit" class="btn">Generate New API Key</button>
+                    </form>
                 <% } else { %>
                     <p>You have not generated an API key yet.</p>
                     <form action="/api/v1/user/generate-apikey" method="POST">
@@ -44,54 +52,214 @@
         </div>
 
         <div class="card">
-            <h2>Sending Messages</h2>
-            <p>To send messages via the API, make a POST request to the following endpoint. You must include your API key in the <code>x-api-key</code> header.</p>
-            <p><span class="endpoint">POST /api/v1/message/send</span></p>
+            <h2>API Usage</h2>
+            <h3>Authentication</h3>
+            <p>All API requests must include your API key in an <code>x-api-key</code> header.</p>
+            <pre><code>x-api-key: YOUR_API_KEY</code></pre>
 
-            <h3>Headers</h3>
-            <pre><code>Content-Type: application/json
-x-api-key: YOUR_API_KEY</code></pre>
+            <h3>Base URL</h3>
+            <p>The base URL for all API endpoints is:</p>
+            <pre><code>http://xcd.xcreate.my.id</code></pre>
 
-            <h3>Send a Text Message</h3>
-            <p>To send a simple text message, use the <code>text</code> message type.</p>
-            <pre><code>{
-    "deviceId": 1,
-    "numbers": "6281234567890",
-    "message": "Hello from the API!",
-    "messageType": "text"
-}</code></pre>
+            <h3>Multiple Recipients</h3>
+            <p>To send a message to multiple numbers, provide a comma-separated string in the <code>to</code> parameter.</p>
+            <pre><code>"to": "6281234567890,6289876543210"</code></pre>
+        </div>
 
-            <h3>Send a Media Message (Image/Document)</h3>
-            <p>To send a media message, you must upload the file as <code>multipart/form-data</code>. The API does not support sending media from a URL via the JSON endpoint.</p>
+        <!-- Send Text Message -->
+        <div class="card" id="send-text">
+            <h2>Send Text Message</h2>
+            <p><span class="endpoint">POST /api/v1/message/send-text</span></p>
+            <p>Sends a simple text message. The request body should be <code>application/json</code>.</p>
 
-            <p>The form data should contain the following fields:</p>
+            <h4>Parameters</h4>
             <ul>
-                <li><code>deviceId</code>: Your device ID.</li>
-                <li><code>numbers</code>: The recipient's number.</li>
-                <li><code>messageType</code>: Must be set to <code>media</code>.</li>
-                <li><code>media</code>: The image or document file to upload.</li>
-                <li><code>message</code>: (Optional) The caption for the media.</li>
+                <li><code>deviceId</code> (integer, required): The ID of the device to send from.</li>
+                <li><code>to</code> (string, required): The recipient's phone number(s), comma-separated.</li>
+                <li><code>message</code> (string, required): The content of the message.</li>
             </ul>
 
-            <p><strong>Example using cURL:</strong></p>
-            <pre><code>curl -X POST \
-  http://yourdomain.com/api/v1/message/send \
-  -H 'x-api-key: YOUR_API_KEY' \
-  -F 'deviceId=1' \
-  -F 'numbers=6281234567890' \
-  -F 'messageType=media' \
-  -F 'message=Here is a test document!' \
-  -F 'media=@/path/to/your/document.pdf'</code></pre>
+            <div class="tabs">
+                <button class="tab-button active" onclick="showTab(event, 'text-curl')">cURL</button>
+                <button class="tab-button" onclick="showTab(event, 'text-php')">PHP</button>
+                <button class="tab-button" onclick="showTab(event, 'text-js')">JavaScript</button>
+            </div>
 
-            <h3>Sending to Multiple Numbers</h3>
-            <p>For both text and media messages, you can send to multiple recipients by providing a comma-separated string of numbers.</p>
-            <pre><code>{
-    "deviceId": 1,
-    "numbers": "6281234567890,6289876543210",
-    "message": "This is a message to multiple people.",
-    "messageType": "text"
-}</code></pre>
+            <div id="text-curl" class="tab-content active">
+                <pre><code>curl -X POST http://xcd.xcreate.my.id/api/v1/message/send-text \
+-H "Content-Type: application/json" \
+-H "x-api-key: YOUR_API_KEY" \
+-d '{
+  "deviceId": 1,
+  "to": "6281234567890",
+  "message": "Hello from the API!"
+}'</code></pre>
+            </div>
+            <div id="text-php" class="tab-content">
+                <pre><code>&lt;?php
+$apiKey = 'YOUR_API_KEY';
+$url = 'http://xcd.xcreate.my.id/api/v1/message/send-text';
+$data = [
+    'deviceId' => 1,
+    'to' => '6281234567890',
+    'message' => 'Hello from PHP!'
+];
+
+$ch = curl_init($url);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_HTTPHEADER, [
+    'Content-Type: application/json',
+    'x-api-key: ' . $apiKey
+]);
+curl_setopt($ch, CURLOPT_POST, true);
+curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+
+$response = curl_exec($ch);
+curl_close($ch);
+
+echo $response;
+?&gt;</code></pre>
+            </div>
+            <div id="text-js" class="tab-content">
+                <pre><code>// Can be run in a browser or Node.js environment with 'node-fetch'
+async function sendText() {
+    const apiKey = 'YOUR_API_KEY';
+    const url = 'http://xcd.xcreate.my.id/api/v1/message/send-text';
+    const data = {
+        deviceId: 1,
+        to: '6281234567890',
+        message: 'Hello from JavaScript!'
+    };
+
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': apiKey
+            },
+            body: JSON.stringify(data)
+        });
+        const result = await response.json();
+        console.log(result);
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+sendText();</code></pre>
+            </div>
         </div>
+
+        <!-- Send Image/Document -->
+        <% ['image', 'document'].forEach(type => { %>
+        <div class="card" id="send-<%= type %>">
+            <h2>Send <%= type.charAt(0).toUpperCase() + type.slice(1) %></h2>
+            <p><span class="endpoint">POST /api/v1/message/send-<%= type %></span></p>
+            <p>Sends a file. The request must be sent as <code>multipart/form-data</code>.</p>
+
+            <h4>Form Fields</h4>
+            <ul>
+                <li><code>deviceId</code> (integer, required): The ID of the device.</li>
+                <li><code>to</code> (string, required): The recipient's number(s).</li>
+                <li><code>media</code> (file, required): The <%= type %> file to upload.</li>
+                <li><code>message</code> (string, optional): A caption for the <%= type %>.</li>
+            </ul>
+
+            <div class="tabs">
+                <button class="tab-button active" onclick="showTab(event, '<%= type %>-curl')">cURL</button>
+                <button class="tab-button" onclick="showTab(event, '<%= type %>-php')">PHP</button>
+                <button class="tab-button" onclick="showTab(event, '<%= type %>-js')">JavaScript</button>
+            </div>
+
+            <div id="<%= type %>-curl" class="tab-content active">
+                <pre><code>curl -X POST http://xcd.xcreate.my.id/api/v1/message/send-<%= type %> \
+-H "x-api-key: YOUR_API_KEY" \
+-F "deviceId=1" \
+-F "to=6281234567890" \
+-F "message=Check out this <%= type %>!" \
+-F "media=@/path/to/your/<%= type === 'image' ? 'image.jpg' : 'file.pdf' %>"</code></pre>
+            </div>
+             <div id="<%= type %>-php" class="tab-content">
+                <pre><code>&lt;?php
+$apiKey = 'YOUR_API_KEY';
+$url = 'http://xcd.xcreate.my.id/api/v1/message/send-<%= type %>';
+$filePath = '/path/to/your/<%= type === 'image' ? 'image.jpg' : 'file.pdf' %>';
+
+// Using CURLFile is the recommended way to upload files in PHP.
+$file = new CURLFile($filePath, mime_content_type($filePath), basename($filePath));
+
+$data = [
+    'deviceId' => 1,
+    'to' => '6281234567890',
+    'message' => 'Here is a <%= type %> from PHP!',
+    'media' => $file
+];
+
+$ch = curl_init($url);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_HTTPHEADER, ['x-api-key: ' . $apiKey]);
+curl_setopt($ch, CURLOPT_POST, true);
+curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+
+$response = curl_exec($ch);
+curl_close($ch);
+
+echo $response;
+?&gt;</code></pre>
+            </div>
+            <div id="<%= type %>-js" class="tab-content">
+                <pre><code>// This code is for a browser environment with a file input.
+// &lt;input type="file" id="fileInput" /&gt;
+
+async function sendFile() {
+    const apiKey = 'YOUR_API_KEY';
+    const url = 'http://xcd.xcreate.my.id/api/v1/message/send-<%= type %>';
+    const fileInput = document.getElementById('fileInput');
+
+    if (fileInput.files.length === 0) {
+        alert('Please select a file!');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('deviceId', '1');
+    formData.append('to', '6281234567890');
+    formData.append('message', 'File from a local HTML page!');
+    formData.append('media', fileInput.files[0]);
+
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'x-api-key': apiKey
+                // Content-Type is set automatically by the browser for FormData
+            },
+            body: formData
+        });
+        const result = await response.json();
+        console.log(result);
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}</code></pre>
+            </div>
+        </div>
+        <% }); %>
+
     </div>
+    <script>
+        function showTab(event, tabId) {
+            const parent = event.target.closest('.card');
+            // Hide all tab contents in the current card
+            parent.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+            // Deactivate all tab buttons in the current card
+            parent.querySelectorAll('.tab-button').forEach(tb => tb.classList.remove('active'));
+            // Show the selected tab content
+            parent.querySelector('#' + tabId).classList.add('active');
+            // Activate the clicked tab button
+            event.target.classList.add('active');
+        }
+    </script>
 </body>
 </html>

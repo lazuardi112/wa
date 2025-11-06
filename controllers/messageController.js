@@ -131,6 +131,113 @@ const sendMessage = async (req, res) => {
     }
 };
 
+// @desc    Send a message via API
+// @route   POST /api/v1/message/send-text, send-image, send-document
+// @access  Private (API Key)
+const sendApiMessage = async (req, res) => {
+    const { user } = req;
+    // 'numbers' is renamed to 'to' for API clarity. 'message' is the text/caption.
+    const { deviceId, to, message, messageType } = req.body;
+    const mediaFile = req.file;
+
+    // --- API-specific Validation ---
+    if (!deviceId || !to) {
+        return res.status(400).json({ success: false, message: 'Device ID and recipient number(s) are required.' });
+    }
+     if (messageType === 'text' && !message) {
+        return res.status(400).json({ success: false, message: 'Message text is required.' });
+    }
+    if ((messageType === 'image' || messageType === 'document') && !mediaFile) {
+        return res.status(400).json({ success: false, message: 'A media file is required.' });
+    }
+    // --- End Validation ---
+
+    try {
+        const today = new Date().setHours(0, 0, 0, 0);
+        const lastReset = user.lastResetDate ? new Date(user.lastResetDate).setHours(0, 0, 0, 0) : null;
+
+        if (lastReset !== today) {
+            user.messageCount = 0;
+            user.lastResetDate = new Date();
+            await user.save();
+        }
+
+        const recipientList = to.split(',').map(n => n.trim()).filter(n => n);
+        if (user.messageCount + recipientList.length > (user.messageLimit || 0)) {
+            return res.status(429).json({
+                success: false,
+                message: `Sending ${recipientList.length} messages would exceed your daily limit of ${user.messageLimit || 0}.`,
+            });
+        }
+
+        const device = await db.Device.findOne({ where: { id: deviceId, userId: user.id } });
+        if (!device) {
+            return res.status(403).json({ success: false, message: 'Forbidden: You do not own this device.' });
+        }
+        if (device.status !== 'connected') {
+            return res.status(400).json({ success: false, message: 'Device is not connected.' });
+        }
+
+        const sock = getClient(device.instanceId);
+        if (!sock) {
+            return res.status(500).json({ success: false, message: 'WhatsApp client not available for this device.' });
+        }
+
+        let successfulSends = 0;
+        let failedSends = 0;
+        const results = [];
+
+        for (const number of recipientList) {
+            try {
+                const jid = formatNumber(number);
+                let sentMessage;
+
+                const mediaOptions = {
+                    caption: message || '',
+                    mimetype: mediaFile?.mimetype,
+                };
+
+                if (messageType === 'image' && mediaFile) {
+                     sentMessage = await sock.sendMessage(jid, { image: mediaFile.buffer, ...mediaOptions });
+                } else if (messageType === 'document' && mediaFile) {
+                    sentMessage = await sock.sendMessage(jid, { document: mediaFile.buffer, fileName: mediaFile.originalname, ...mediaOptions });
+                } else if (messageType === 'text') {
+                    sentMessage = await sock.sendMessage(jid, { text: message });
+                } else {
+                    results.push({ number, success: false, error: 'Unsupported message type or missing file.' });
+                    failedSends++;
+                    continue;
+                }
+
+                if (sentMessage) {
+                    results.push({ number, success: true, messageId: sentMessage.key.id });
+                    successfulSends++;
+                }
+                 await new Promise(resolve => setTimeout(resolve, 500));
+            } catch (e) {
+                results.push({ number, success: false, error: e?.message || 'Unknown error' });
+                failedSends++;
+            }
+        }
+
+        if (successfulSends > 0) {
+            await db.User.increment('messageCount', { by: successfulSends, where: { id: user.id } });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: `Request processed. Sent: ${successfulSends}, Failed: ${failedSends}.`,
+            details: results,
+        });
+
+    } catch (error) {
+        console.error(`[API Send Error]:`, error);
+        return res.status(500).json({ success: false, message: 'An internal server error occurred.' });
+    }
+};
+
+
 module.exports = {
     sendMessage,
+    sendApiMessage,
 };
