@@ -46,9 +46,10 @@ const sendMessage = async (req, res) => {
             console.log(`[MessageController] Reset daily message count for user ${user.email}.`);
         }
 
+        // Parse recipient list ONCE (fix duplicate declaration)
         const recipientList = numbers.split(',').map(n => n.trim()).filter(n => n);
-        if (user.messageCount + recipientList.length > user.messageLimit) {
-            const msg = `Sending ${recipientList.length} messages would exceed your daily limit of ${user.messageLimit}.`;
+        if (user.messageCount + recipientList.length > (user.messageLimit || 0)) {
+            const msg = `Sending ${recipientList.length} messages would exceed your daily limit of ${user.messageLimit || 0}.`;
             return res.redirect(`/messaging?status=error&msg=${encodeURIComponent(msg)}`);
         }
         // --- End of Check ---
@@ -62,7 +63,9 @@ const sendMessage = async (req, res) => {
         }
 
         const sock = getClient(device.instanceId);
-        const recipientList = numbers.split(',').map(n => n.trim()).filter(n => n);
+        if (!sock) {
+            return res.status(500).json({ message: 'WhatsApp client not available for this device.' });
+        }
 
         let successfulSends = 0;
         for (const number of recipientList) {
@@ -103,7 +106,7 @@ const sendMessage = async (req, res) => {
                 // Add a small delay between messages to avoid being flagged
                 await new Promise(resolve => setTimeout(resolve, 500));
             } catch (e) {
-                console.warn(`Failed to send message to ${number}:`, e.message);
+                console.warn(`Failed to send message to ${number}:`, e?.message || e);
             }
         }
 
