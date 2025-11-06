@@ -72,8 +72,8 @@ async function connectToWhatsApp(instanceId, deviceId) {
     // Listener untuk pesan masuk, sekarang mendelegasikannya ke botService
     sock.ev.on('messages.upsert', async ({ messages }) => {
         const msg = messages[0];
-        // Teruskan ke botService untuk diproses
-        await processMessage(msg, instanceId, deviceId);
+        // Teruskan ke botService untuk diproses, berikan instance 'sock'
+        await processMessage(sock, msg, instanceId, deviceId);
     });
 
     return sock;
