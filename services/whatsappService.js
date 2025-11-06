@@ -103,15 +103,6 @@ async function connectToWhatsApp(instanceId, deviceId) {
 
             const userPackage = subscription.package;
 
-            // Reset daily message count if needed
-            const today = new Date().setHours(0, 0, 0, 0);
-            const lastReset = user.lastResetDate ? new Date(user.lastResetDate).setHours(0, 0, 0, 0) : null;
-            if (lastReset !== today) {
-                user.messageCount = 0;
-                user.lastResetDate = new Date();
-                await user.save();
-            }
-
             // Check if user has messages left before processing bot logic
             if (user.messageCount >= userPackage.messageLimit) {
                 console.log(`[${instanceId}] User ${user.email} has reached their message limit. Bot response not sent.`);
@@ -139,9 +130,21 @@ async function connectToWhatsApp(instanceId, deviceId) {
                 });
             }
 
-            const matchedFlow = flowsToSearch.find(flow => messageText === flow.prefix.toLowerCase());
+            const matchedFlow = flowsToSearch.find(flow => messageText.startsWith(flow.prefix.toLowerCase()));
 
             if (matchedFlow) {
+                // Handle daily reset before incrementing
+                const today = new Date().setHours(0, 0, 0, 0);
+                const lastReset = user.lastResetDate ? new Date(user.lastResetDate).setHours(0, 0, 0, 0) : null;
+
+                if (lastReset !== today) {
+                    await db.User.update(
+                        { messageCount: 0, lastResetDate: new Date() },
+                        { where: { id: user.id } }
+                    );
+                    console.log(`[Bot] Reset daily message count for user ${user.email}.`);
+                }
+
                 // Atomically increment message count before sending
                 await db.User.increment('messageCount', { by: 1, where: { id: user.id } });
                 console.log(`[Bot] Incremented messageCount by 1 for user ${user.email}.`);
