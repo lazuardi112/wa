@@ -1,49 +1,152 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>User Dashboard</title>
-  <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #121212; color: white; margin: 0; }
-    .sidebar { position: fixed; width: 250px; height: 100%; background: #1e1e1e; padding: 1rem; }
-    .sidebar h2 { text-align: center; color: #007bff; }
-    .sidebar a { display: block; color: white; padding: 1rem; text-decoration: none; border-radius: 4px; }
-    .sidebar a.active, .sidebar a:hover { background: #333; }
-    .main-content { margin-left: 270px; padding: 2rem; }
-    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; padding-bottom: 1rem; }
-    .header h1 { color: #007bff; }
-    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 2rem; }
-    .card { background: #1e1e1e; padding: 1.5rem; border-radius: 8px; }
-    .card h3 { margin-top: 0; color: #999; }
-    .card p { font-size: 2rem; font-weight: bold; margin: 0; color: #007bff; }
-    .renew-btn { background-color: #28a745; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; }
-  </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>User Dashboard</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #121212; color: white; margin: 0; }
+        .sidebar { position: fixed; width: 250px; height: 100%; background: #1e1e1e; padding: 1rem; }
+        .sidebar h2 { text-align: center; color: #007bff; }
+        .sidebar a { display: block; color: white; padding: 1rem; text-decoration: none; border-radius: 4px; }
+        .sidebar a.active, .sidebar a:hover { background: #333; }
+        .main-content { margin-left: 270px; padding: 2rem; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; padding-bottom: 1rem; }
+        .header h1 { color: #007bff; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 2rem; }
+        .card { background: #1e1e1e; padding: 1.5rem; border-radius: 8px; }
+        .card h3 { margin-top: 0; color: #999; }
+        .card p { font-size: 2rem; font-weight: bold; margin: 0; color: #007bff; }
+        .renew-btn { background-color: #28a745; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; font-size: 1rem; }
+
+        /* Modal Styles */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.7); }
+        .modal-content { background-color: #2a2a2a; margin: 10% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 400px; text-align: center; border-radius: 8px; }
+        .close-button { color: #aaa; float: right; font-size: 28px; font-weight: bold; }
+        .close-button:hover, .close-button:focus { color: white; text-decoration: none; cursor: pointer; }
+        #qr-code-image { max-width: 100%; height: auto; margin-top: 1rem; }
+        .form-group { margin-top: 1rem; }
+        .form-group label { margin-right: 0.5rem; }
+        .form-group input { width: 100px; text-align: center; padding: 0.5rem; }
+    </style>
 </head>
 <body>
-  <%- include('partials/sidebar', { active: 'dashboard' }) %>
+    <%- include('partials/sidebar', { active: 'dashboard' }) %>
 
-  <div class="main-content">
-    <div class="header">
-      <h1>Welcome, <%= user?.name || 'User' %>!</h1>
-      <div>
-        <span>Plan: <strong><%= currentPackage.name %></strong> | Expires:
-          <strong><%= data?.subscriptionExpires || 'N/A' %></strong>
-        </span>
-        <a href="/subscribe" class="renew-btn" style="margin-left: 1rem;">Renew / Upgrade</a>
-      </div>
+    <div class="main-content">
+        <div class="header">
+            <h1>Welcome, <%= user?.name || 'User' %>!</h1>
+            <div>
+                <span>Plan: <strong><%= currentPackage.name %></strong> | Expires:
+                    <strong><%= data?.subscriptionExpires || 'N/A' %></strong>
+                </span>
+                <% if (currentPackage.name === 'Free') { %>
+                    <button class="renew-btn" style="margin-left: 1rem;" onclick="openUpgradeModal()">Upgrade Premium</button>
+                <% } else { %>
+                    <a href="/subscribe" class="renew-btn" style="margin-left: 1rem;">Renew Plan</a>
+                <% } %>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="card">
+                <h3>Active Devices</h3>
+                <p><%= data?.deviceCount || 0 %> / <%= currentPackage.maxDevices %></p>
+            </div>
+            <div class="card">
+                <h3>Messages Sent Today</h3>
+                <p><%= data?.messageCount || 0 %> / <%= currentPackage.messageLimit %></p>
+            </div>
+        </div>
     </div>
 
-    <div class="stats-grid">
-      <div class="card">
-        <h3>Active Devices</h3>
-        <p><%= data?.deviceCount || 0 %> / <%= currentPackage.name === 'Premium' ? 'Unlimited' : currentPackage.maxDevices %></p>
-      </div>
-      <div class="card">
-        <h3>Messages Sent Today</h3>
-        <p><%= data?.messageCount || 0 %> / <%= currentPackage.name === 'Premium' ? 'Unlimited' : currentPackage.messageLimit %></p>
-      </div>
+    <!-- Upgrade Modal -->
+    <div id="upgrade-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal('upgrade-modal')">&times;</span>
+            <h2>Upgrade to Premium</h2>
+            <p>Pilih berapa bulan:</p>
+            <div class="form-group">
+                <label for="months">Months:</label>
+                <input type="number" id="months" value="1" min="1" max="12">
+            </div>
+            <button class="renew-btn" style="margin-top: 1rem;" onclick="pay('<%= premiumPackage.id %>')">
+                Pay Now (IDR <%= premiumPackage.price.toLocaleString() %> / month)
+            </button>
+        </div>
     </div>
-  </div>
+
+    <!-- QR Code Modal -->
+    <div id="qr-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal('qr-modal')">&times;</span>
+            <h2>Scan QR Code to Pay</h2>
+            <p>Please use your e-wallet app to scan the code below.</p>
+            <img id="qr-code-image" src="" alt="QR Code">
+            <p>After payment, your subscription will be updated automatically.</p>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        const upgradeModal = document.getElementById('upgrade-modal');
+        const qrModal = document.getElementById('qr-modal');
+        const qrCodeImage = document.getElementById('qr-code-image');
+
+        function openUpgradeModal() {
+            upgradeModal.style.display = 'block';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            if (event.target == upgradeModal) {
+                closeModal('upgrade-modal');
+            }
+            if (event.target == qrModal) {
+                closeModal('qr-modal');
+            }
+        }
+
+        async function pay(packageId) {
+            const payButton = event.target;
+            payButton.disabled = true;
+            payButton.textContent = 'Processing...';
+
+            try {
+                const monthsInput = document.getElementById('months');
+                const months = monthsInput ? monthsInput.value : 1;
+
+                const response = await fetch(`/api/v1/payment/subscribe/\${packageId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ months }),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || 'Failed to initiate payment');
+                }
+
+                closeModal('upgrade-modal');
+
+                if (data.qr_code_url) {
+                    qrCodeImage.src = data.qr_code_url;
+                    qrModal.style.display = 'block';
+                } else {
+                    throw new Error('QR Code URL not found in the response.');
+                }
+
+            } catch (error) {
+                console.error('Payment error:', error);
+                alert(`An error occurred: \${error.message}`);
+            } finally {
+                payButton.disabled = false;
+                 payButton.textContent = 'Pay Now (IDR <%= premiumPackage.price.toLocaleString() %> / month)';
+            }
+        }
+    </script>
 </body>
 </html>
