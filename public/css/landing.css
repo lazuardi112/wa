@@ -1,22 +1,65 @@
+:root {
+  --primary-color: #007bff;
+  --bg-color: #ffffff;
+  --text-color: #333;
+  --section-bg-color: #f8f9fa;
+}
+
 body {
-    padding-top: 56px; /* Adjust body padding to account for the fixed navbar */
+  font-family: 'Poppins', sans-serif;
+  color: var(--text-color);
 }
 
+/* Header */
+.navbar {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+/* Hero Section */
 .hero-section {
-    background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('https://source.unsplash.com/1600x900/?whatsapp,technology') no-repeat center center;
-    background-size: cover;
-    padding: 100px 0;
+  background-color: var(--primary-color);
+  color: var(--bg-color);
+  padding: 100px 0;
+  text-align: center;
 }
 
+.hero-section h1 {
+  font-weight: 700;
+}
+
+.hero-section .btn {
+  background-color: var(--bg-color);
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+/* Features Section */
 .features-section {
-    background-color: #f8f9fa;
+  padding: 80px 0;
 }
 
-.card {
-    border: none;
-    transition: transform 0.3s;
+.feature-card {
+  text-align: center;
+  padding: 30px;
+  border-radius: 10px;
+  background-color: var(--bg-color);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.07);
+  transition: transform 0.3s ease;
 }
 
-.card:hover {
-    transform: translateY(-10px);
+.feature-card:hover {
+  transform: translateY(-10px);
+}
+
+.feature-icon {
+  font-size: 48px;
+  color: var(--primary-color);
+  margin-bottom: 20px;
+}
+
+/* CTA Section */
+.cta-section {
+  background-color: var(--section-bg-color);
+  padding: 80px 0;
+  text-align: center;
 }
