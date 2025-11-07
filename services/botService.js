@@ -70,7 +70,8 @@ const processMessage = async (sock, msg, instanceId, deviceId) => {
         // --- TOTAL BOT LOGIC OVERHAUL ---
 
         // 1. Find all possible matching flows using "startsWith" logic.
-        const matchingFlows = flowsToSearch.filter(flow => messageText.startsWith(flow.prefix.toLowerCase()));
+        //    IMPORTANT: Trim the prefix from the DB to avoid whitespace issues.
+        const matchingFlows = flowsToSearch.filter(flow => messageText.startsWith(flow.prefix.trim().toLowerCase()));
 
         let bestMatch = null;
         if (matchingFlows.length > 1) {
@@ -139,7 +140,12 @@ const processMessage = async (sock, msg, instanceId, deviceId) => {
                 conversationState.delete(sender);
             }
 
-        } else if (currentState) {
+        } else {
+            // If no match was found, and we are not in a conversation, log it.
+            if (!currentState) {
+                 console.log(`[BotService] No matching prefix found for message: "${messageText}" from ${sender}`);
+            }
+            // If we were in a conversation, it's normal not to find a match, so we just end it.
             conversationState.delete(sender);
         }
 
