@@ -29,13 +29,21 @@ const isMatch = (messageText, trigger) => {
  */
 const executeAction = async (sock, sender, action) => {
     try {
-        if (action.actionType === 'reply' && action.payload) {
-            // The payload should contain the message object for Baileys
-            // e.g., { "text": "Hello world" } or { "image": { "url": "..." } }
-            await sock.sendMessage(sender, action.payload);
-        } else if (action.actionType === 'webhook' && action.payload && action.payload.url) {
-            // The payload must contain a 'url' and optionally 'data'
-            await axios.post(action.payload.url, action.payload.data || {});
+        let payload = action.payload;
+        // Ensure payload is an object, not a string
+        if (typeof payload === 'string') {
+            try {
+                payload = JSON.parse(payload);
+            } catch (e) {
+                console.error(`[BotService] Error parsing action payload for action ${action.id}:`, e);
+                return; // Stop execution if payload is invalid
+            }
+        }
+
+        if (action.actionType === 'reply' && payload) {
+            await sock.sendMessage(sender, payload);
+        } else if (action.actionType === 'webhook' && payload && payload.url) {
+            await axios.post(payload.url, payload.data || {});
         }
     } catch (error) {
         console.error(`[BotService] Error executing action ${action.id}:`, error);
