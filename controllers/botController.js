@@ -1,51 +1,5 @@
 const db = require('../models');
 
-// @desc    Render the main bot management page
-// @route   GET /bot
-// @access  Private
-const renderBotPage = async (req, res) => {
-    try {
-        const userId = req.user.id;
-        const devices = await db.Device.findAll({ where: { userId } });
-        const bots = await db.Bot.findAll({
-            where: {},
-            include: [
-                {
-                    model: db.Device,
-                    as: 'device',
-                    where: { userId }
-                },
-                {
-                    model: db.BotTrigger,
-                    as: 'triggers',
-                    include: [{
-                        model: db.BotAction,
-                        as: 'actions'
-                    }]
-                }
-            ],
-            order: [
-                ['createdAt', 'ASC'],
-                [{ model: db.BotTrigger, as: 'triggers' }, 'createdAt', 'ASC'],
-                [{ model: db.BotTrigger, as: 'triggers' }, { model: db.BotAction, as: 'actions' }, 'executionOrder', 'ASC']
-            ]
-        });
-
-        res.render('bot', {
-            title: 'Bot Management',
-            user: req.user,
-            bots,
-            devices,
-            active: 'bot',
-            error: req.query.error,
-            success: req.query.success
-        });
-    } catch (error) {
-        console.error('Error rendering bot page:', error);
-        res.status(500).send('Internal Server Error');
-    }
-};
-
 // --- Bot Management ---
 
 // @desc    Create a new bot
@@ -225,7 +179,6 @@ const deleteAction = async (req, res) => {
 };
 
 module.exports = {
-    renderBotPage,
     createBot,
     deleteBot,
     createTrigger,

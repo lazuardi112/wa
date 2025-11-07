@@ -60,17 +60,47 @@ const renderMessagingPage = async (req, res) => {
     }
 };
 
-// @desc    Render the bot management page
+// @desc    Render the main bot management page
 const renderBotPage = async (req, res) => {
     try {
-        const [devices, botFlows] = await Promise.all([
-            db.Device.findAll({ where: { userId: req.user.id } }),
-            db.BotFlow.findAll({ where: { userId: req.user.id }, include: ['device'] })
-        ]);
-        res.render('bot', { user: req.user, devices, botFlows, query: req.query });
+        const userId = req.user.id;
+        const devices = await db.Device.findAll({ where: { userId } });
+        const bots = await db.Bot.findAll({
+            where: {},
+            include: [
+                {
+                    model: db.Device,
+                    as: 'device',
+                    where: { userId }
+                },
+                {
+                    model: db.BotTrigger,
+                    as: 'triggers',
+                    include: [{
+                        model: db.BotAction,
+                        as: 'actions'
+                    }]
+                }
+            ],
+            order: [
+                ['createdAt', 'ASC'],
+                [{ model: db.BotTrigger, as: 'triggers' }, 'createdAt', 'ASC'],
+                [{ model: db.BotTrigger, as: 'triggers' }, { model: db.BotAction, as: 'actions' }, 'executionOrder', 'ASC']
+            ]
+        });
+
+        res.render('bot', {
+            title: 'Bot Management',
+            user: req.user,
+            bots,
+            devices,
+            active: 'bot',
+            error: req.query.error,
+            success: req.query.success
+        });
     } catch (error) {
-        console.error('Bot Page Error:', error);
-        res.status(500).send('Error loading bot page.');
+        console.error('Error rendering bot page:', error);
+        res.status(500).send('Internal Server Error');
     }
 };
 
