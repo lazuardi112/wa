@@ -26,10 +26,6 @@ try {
     const server = http.createServer(app);
     console.log("   Express app initialized.");
 
-    // --- PUBLIC WEBHOOK (Must be before express.json()) ---
-    const paymentController = require('./controllers/paymentController');
-    app.post('/notif/midtrans', paymentController.handleMidtransNotification);
-
     // --- 3. View Engine Configuration (EJS) ---
     console.log("3. Configuring view engine...");
     app.set('view engine', 'ejs');
@@ -38,7 +34,12 @@ try {
 
     // --- 4. Core Middleware ---
     console.log("4. Applying middleware...");
-    app.use(express.json());
+    app.use(express.json()); // <-- IMPORTANT: This must come BEFORE the webhook route
+
+    // --- PUBLIC WEBHOOK ---
+    const paymentController = require('./controllers/paymentController');
+    app.post('/notif/midtrans', paymentController.handleMidtransNotification);
+
     app.use(express.urlencoded({ extended: true }));
     console.log("   Middleware applied.");
 
