@@ -3,163 +3,234 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WhatsApp Bot</title>
+    <title>Bot Management</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #121212; color: white; margin: 0; }
-        .sidebar { position: fixed; width: 250px; height: 100%; background: #1e1e1e; padding: 1rem; }
-        .sidebar h2 { text-align: center; color: #007bff; }
-        .sidebar a { display: block; color: white; padding: 1rem; text-decoration: none; border-radius: 4px; }
+        :root {
+            --primary-color: #007bff;
+            --danger-color: #dc3545;
+            --secondary-color: #6c757d;
+            --background-dark: #121212;
+            --background-light: #1e1e1e;
+            --text-color: #f8f9fa;
+            --border-color: #333;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: var(--background-dark); color: var(--text-color); margin: 0; }
+        .sidebar { position: fixed; width: 250px; height: 100%; background: var(--background-light); padding: 1rem; }
+        .sidebar h2 { text-align: center; color: var(--primary-color); }
+        .sidebar a { display: block; color: var(--text-color); padding: 1rem; text-decoration: none; border-radius: 4px; }
         .sidebar a:hover { background: #333; }
         .main-content { margin-left: 270px; padding: 2rem; }
-        h1, h2 { color: #007bff; }
-        .card { background: #1e1e1e; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; }
+        h1, h2 { color: var(--primary-color); }
+        .btn { padding: 0.5rem 1rem; border: none; border-radius: 4px; color: white; cursor: pointer; text-decoration: none; display: inline-block; font-size: 0.9rem; }
+        .btn-primary { background-color: var(--primary-color); }
+        .btn-danger { background-color: var(--danger-color); }
+        .btn-secondary { background-color: var(--secondary-color); }
+
+        .bot-container { background: var(--background-light); border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 2rem; }
+        .bot-header { padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+        .bot-header h2 { margin: 0; font-size: 1.5rem; }
+        .bot-body { padding: 1.5rem; }
+
+        .trigger-card { background: #2c2c2c; border: 1px solid #444; border-radius: 6px; margin-bottom: 1.5rem; }
+        .trigger-header { padding: 1rem; border-bottom: 1px solid #444; display: flex; justify-content: space-between; align-items: center; }
+        .trigger-header code { background: #333; padding: 0.2rem 0.5rem; border-radius: 4px; }
+        .trigger-body { padding: 1rem; }
+        .action-item { display: flex; justify-content: space-between; align-items: center; background: #333; padding: 0.75rem; border-radius: 4px; margin-bottom: 0.5rem; }
+
+        /* Modal Styles */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); }
+        .modal-content { background-color: var(--background-light); margin: 10% auto; padding: 2rem; border-radius: 8px; border: 1px solid var(--border-color); width: 80%; max-width: 600px; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1rem; }
+        .modal-header h2 { margin: 0; }
+        .close-btn { color: #aaa; font-size: 28px; font-weight: bold; cursor: pointer; }
         .form-group { margin-bottom: 1rem; }
         label { display: block; margin-bottom: 0.5rem; }
-        input, select, textarea { width: 100%; max-width: 500px; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2c2c2c; color: white; box-sizing: border-box; }
-        textarea { min-height: 100px; }
-        button, .btn { padding: 0.75rem 1.5rem; border: none; border-radius: 4px; background-color: #007bff; color: white; font-size: 1rem; cursor: pointer; text-decoration: none; display: inline-block; }
-        .btn-danger { background-color: #dc3545; }
-        .btn-toggle { background-color: #6c757d; }
-        table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; }
-        th, td { padding: 1rem; text-align: left; border-bottom: 1px solid #333; }
-        th { background-color: #2c2c2c; }
+        input, select, textarea { width: 100%; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2c2c2c; color: white; box-sizing: border-box; }
     </style>
 </head>
 <body>
     <%- include('partials/sidebar', { active: 'bot' }) %>
-    <div class="main-content">
-        <h1>WhatsApp Bot</h1>
 
-        <div class="card">
-            <h2>Create New Bot Flow</h2>
-            <form id="create-flow-form" action="/api/v1/bot/create" method="POST">
-                <input type="hidden" name="response" id="response-json">
+    <div class="main-content">
+        <h1>Bot Management</h1>
+        <button id="add-bot-btn" class="btn btn-primary">Add New Bot</button>
+
+        <% if (bots.length > 0) { %>
+            <% bots.forEach(bot => { %>
+                <div class="bot-container">
+                    <div class="bot-header">
+                        <h2><%= bot.name %> <small>(Device: <%= bot.device.id %>)</small></h2>
+                        <form action="/bot/delete/<%= bot.id %>" method="POST" onsubmit="return confirm('Are you sure?');">
+                            <button type="submit" class="btn btn-danger">Delete Bot</button>
+                        </form>
+                    </div>
+                    <div class="bot-body">
+                        <% bot.triggers.forEach(trigger => { %>
+                            <div class="trigger-card">
+                                <div class="trigger-header">
+                                    <span>Trigger: <code><%= trigger.keyword %></code> (Type: <%= trigger.matchType %>)</span>
+                                    <form action="/bot/trigger/delete/<%= trigger.id %>" method="POST">
+                                        <button type="submit" class="btn btn-danger btn-sm">Delete Trigger</button>
+                                    </form>
+                                </div>
+                                <div class="trigger-body">
+                                    <% trigger.actions.forEach(action => { %>
+                                        <div class="action-item">
+                                            <span>Action: <%= action.actionType %></span>
+                                            <form action="/bot/action/delete/<%= action.id %>" method="POST">
+                                                <button type="submit" class="btn btn-danger btn-sm">Delete Action</button>
+                                            </form>
+                                        </div>
+                                    <% }); %>
+                                    <button class="btn btn-secondary btn-sm add-action-btn" data-trigger-id="<%= trigger.id %>">Add Action</button>
+                                </div>
+                            </div>
+                        <% }); %>
+                        <button class="btn btn-primary add-trigger-btn" data-bot-id="<%= bot.id %>">Add Trigger</button>
+                    </div>
+                </div>
+            <% }); %>
+        <% } else { %>
+            <p>No bots found. Click "Add New Bot" to get started.</p>
+        <% } %>
+    </div>
+
+    <!-- Modals -->
+    <div id="add-bot-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add New Bot</h2>
+                <span class="close-btn">&times;</span>
+            </div>
+            <form action="/bot/create" method="POST">
                 <div class="form-group">
-                    <label for="deviceId">Select Device</label>
-                    <select id="deviceId" name="deviceId" required>
-                        <% devices.forEach(device => { %>
-                            <option value="<%= device.id %>" <%= device.status !== 'connected' ? 'disabled' : '' %>>
-                                <%= device.id %> (Status: <%= device.status %>)
-                            </option>
+                    <label for="bot-name">Bot Name</label>
+                    <input type="text" name="name" id="bot-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="bot-device">Device</label>
+                    <select name="deviceId" id="bot-device" required>
+                        <% devices.forEach(d => { %>
+                            <option value="<%= d.id %>"><%= d.id %></option>
                         <% }); %>
                     </select>
                 </div>
-                <div class="form-group">
-                    <label for="prefix">Prefix (Trigger Keyword)</label>
-                    <input type="text" id="prefix" name="prefix" placeholder="e.g., !menu" required>
-                </div>
-                <div class="form-group">
-                    <label for="responseText">Response Text</label>
-                    <textarea id="responseText" placeholder="The bot's automated reply." required></textarea>
-                </div>
-                <div class="form-group">
-                    <label for="responseMedia">Media URL (Optional)</label>
-                    <input type="text" id="responseMedia" placeholder="https://example.com/image.jpg">
-                    <small>If provided, the bot will send this image. The text above will be its caption.</small>
-                </div>
-                <div class="form-group">
-                    <label for="parentId">Parent Flow (for branching)</label>
-                    <select id="parentId" name="parentId">
-                        <option value="">None (Top-level flow)</option>
-                        <% botFlows.forEach(flow => { %>
-                            <% if (!flow.parentId) { %>
-                                <option value="<%= flow.id %>"><%= flow.prefix %></option>
-                            <% } %>
-                        <% }); %>
-                    </select>
-                </div>
-                <button type="submit">Create Flow</button>
+                <button type="submit" class="btn btn-primary">Create Bot</button>
             </form>
         </div>
+    </div>
 
-        <div class="card">
-            <h2>Manage Bot Flows</h2>
-            <!-- Table remains the same -->
-             <table>
-                <thead>
-                    <tr>
-                        <th>Prefix</th>
-                        <th>Response</th>
-                        <th>Device</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <%
-                        const renderFlows = (flows, parentId = null, level = 0) => {
-                            const children = flows.filter(f => f.parentId === parentId);
-                            if (children.length === 0) return;
-                    %>
-                    <% children.forEach(flow => { %>
-                        <tr>
-                            <td style="padding-left: <%= 1 + level * 1.5 %>rem;">
-                                <% if (level > 0) { %><span>&#8627;</span><% } %>
-                                <%= flow.prefix %>
-                            </td>
-                            <td>
-                                <% if (Array.isArray(flow.response)) { %>
-                                    <%= flow.response[0].content.substring(0, 50) %>...
-                                <% } else { %>
-                                    <%= flow.response.substring(0, 50) %>...
-                                <% } %>
-                            </td>
-                            <td><%= flow.deviceId %></td>
-                            <td><%= flow.isEnabled ? 'Active' : 'Inactive' %></td>
-                            <td>
-                                <form action="/api/v1/bot/toggle/<%= flow.id %>" method="POST" style="display: inline;">
-                                    <button type="submit" class="btn btn-toggle"><%= flow.isEnabled ? 'Disable' : 'Enable' %></button>
-                                </form>
-                                <a href="/bot/edit/<%= flow.id %>" class="btn">Edit</a>
-                                <form action="/api/v1/bot/delete/<%= flow.id %>" method="POST" style="display: inline;">
-                                    <button type="submit" class="btn btn-danger">Delete</button>
-                                </form>
-                            </td>
-                        </tr>
-                        <% renderFlows(flows, flow.id, level + 1); %>
-                    <% }); %>
-                    <% }; %>
-
-                    <% if (botFlows && botFlows.length > 0) { %>
-                        <% renderFlows(botFlows); %>
-                    <% } else { %>
-                        <tr>
-                            <td colspan="5" style="text-align: center;">No bot flows found.</td>
-                        </tr>
-                    <% } %>
-                </tbody>
-            </table>
+    <div id="add-trigger-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add Trigger</h2>
+                <span class="close-btn">&times;</span>
+            </div>
+            <form action="/bot/trigger/create" method="POST">
+                <input type="hidden" name="botId" id="trigger-bot-id">
+                <div class="form-group">
+                    <label for="trigger-keyword">Keyword</label>
+                    <input type="text" name="keyword" id="trigger-keyword" required>
+                </div>
+                <div class="form-group">
+                    <label for="trigger-match-type">Match Type</label>
+                    <select name="matchType" id="trigger-match-type">
+                        <option value="exact">Exact Match</option>
+                        <option value="contains">Contains</option>
+                        <option value="startsWith">Starts With</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">Create Trigger</button>
+            </form>
         </div>
     </div>
+
+    <div id="add-action-modal" class="modal">
+        <div class="modal-content">
+             <div class="modal-header">
+                <h2>Add Action</h2>
+                <span class="close-btn">&times;</span>
+            </div>
+            <form action="/bot/action/create" method="POST" id="action-form">
+                <input type="hidden" name="triggerId" id="action-trigger-id">
+                <input type="hidden" name="payload" id="action-payload">
+                <div class="form-group">
+                    <label for="action-type">Action Type</label>
+                    <select name="actionType" id="action-type">
+                        <option value="reply">Reply</option>
+                        <option value="webhook">Webhook</option>
+                    </select>
+                </div>
+                <div id="reply-fields">
+                    <div class="form-group">
+                        <label for="reply-text">Reply Text</label>
+                        <textarea id="reply-text"></textarea>
+                    </div>
+                     <div class="form-group">
+                        <label for="reply-media">Media URL (Optional)</label>
+                        <input type="text" id="reply-media">
+                    </div>
+                </div>
+                <div id="webhook-fields" style="display: none;">
+                    <div class="form-group">
+                        <label for="webhook-url">Webhook URL</label>
+                        <input type="url" id="webhook-url">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Create Action</button>
+            </form>
+        </div>
+    </div>
+
     <script>
-        const form = document.getElementById('create-flow-form');
-        const responseJsonInput = document.getElementById('response-json');
-        const responseTextInput = document.getElementById('responseText');
-        const responseMediaInput = document.getElementById('responseMedia');
-
-        form.addEventListener('submit', (e) => {
-            const responses = [];
-            const textContent = responseTextInput.value;
-            const mediaContent = responseMediaInput.value;
-
-            if (mediaContent) {
-                // If there's media, send it first, then the text as a caption (or separate message)
-                // For simplicity, we'll model it as an image message with the text as its content for now
-                responses.push({ type: 'image', content: mediaContent });
-                if (textContent) {
-                    responses.push({ type: 'text', content: textContent });
+        // Modal Handling
+        function setupModal(modalId, openBtnClass, hiddenInputId) {
+            const modal = document.getElementById(modalId);
+            const closeBtn = modal.querySelector('.close-btn');
+            document.querySelectorAll(openBtnClass).forEach(btn => {
+                btn.onclick = function() {
+                    if (hiddenInputId) {
+                        modal.querySelector(hiddenInputId).value = this.dataset.botId || this.dataset.triggerId;
+                    }
+                    modal.style.display = 'block';
                 }
-            } else if (textContent) {
-                responses.push({ type: 'text', content: textContent });
+            });
+            closeBtn.onclick = () => modal.style.display = 'none';
+            window.onclick = (event) => {
+                if (event.target == modal) modal.style.display = 'none';
             }
+        }
+        document.getElementById('add-bot-btn').onclick = () => document.getElementById('add-bot-modal').style.display = 'block';
 
-            if (responses.length === 0) {
-                alert('Please provide a response text or media URL.');
-                e.preventDefault();
-                return;
+        setupModal('add-bot-modal', '#add-bot-btn', null);
+        setupModal('add-trigger-modal', '.add-trigger-btn', '#trigger-bot-id');
+        setupModal('add-action-modal', '.add-action-btn', '#action-trigger-id');
+
+        // Action Form Logic
+        const actionTypeSelect = document.getElementById('action-type');
+        const replyFields = document.getElementById('reply-fields');
+        const webhookFields = document.getElementById('webhook-fields');
+        actionTypeSelect.onchange = function() {
+            replyFields.style.display = this.value === 'reply' ? 'block' : 'none';
+            webhookFields.style.display = this.value === 'webhook' ? 'block' : 'none';
+        }
+
+        const actionForm = document.getElementById('action-form');
+        actionForm.addEventListener('submit', function(e) {
+            const type = actionTypeSelect.value;
+            let payload = {};
+            if (type === 'reply') {
+                const text = document.getElementById('reply-text').value;
+                const media = document.getElementById('reply-media').value;
+                if (media) {
+                    payload = { image: { url: media }, caption: text };
+                } else {
+                    payload = { text: text };
+                }
+            } else if (type === 'webhook') {
+                payload = { url: document.getElementById('webhook-url').value };
             }
-
-            responseJsonInput.value = JSON.stringify(responses);
+            document.getElementById('action-payload').value = JSON.stringify(payload);
         });
     </script>
 </body>
