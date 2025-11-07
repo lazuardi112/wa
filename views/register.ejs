@@ -1,171 +1,43 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Register - Wapi XCD</title>
-    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
-    <style>
-        body {
-            margin: 0;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: linear-gradient(135deg, #0d0d0d, #1a1a1a, #0f2138);
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            overflow: hidden;
-            padding: 2rem 0;
-        }
-
-        /* Floating animated circles */
-        .circle {
-            position: absolute;
-            border-radius: 50%;
-            background: rgba(0,123,255,0.15);
-            animation: floatUpDown 6s ease-in-out infinite alternate;
-        }
-
-        .circle.small { width: 80px; height: 80px; left: 10%; bottom: 15%; animation-duration: 7s; }
-        .circle.medium { width: 150px; height: 150px; right: 12%; top: 20%; animation-duration: 8s; }
-        .circle.large { width: 230px; height: 230px; left: 55%; top: 60%; animation-duration: 9s; }
-
-        @keyframes floatUpDown {
-            from { transform: translateY(0px); }
-            to { transform: translateY(-40px); }
-        }
-
-        /* Card Styling */
-        .container {
-            width: 100%;
-            max-width: 430px;
-            padding: 2.5rem;
-            border-radius: 16px;
-            background: rgba(25,25,25,0.85);
-            backdrop-filter: blur(10px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-            animation: fadeIn 0.8s ease forwards;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Title Animation */
-        .title {
-            text-align: center;
-            font-size: 2.2rem;
-            font-weight: 700;
-            color: #4da6ff;
-            letter-spacing: 2px;
-            margin-bottom: 1.2rem;
-            animation: glow 3s ease-in-out infinite alternate;
-        }
-
-        @keyframes glow {
-            from { text-shadow: 0 0 10px rgba(77,166,255,0.3); }
-            to { text-shadow: 0 0 25px rgba(77,166,255,0.7); }
-        }
-
-        .form-group { margin-bottom: 1.2rem; }
-        label { display: block; margin-bottom: 0.4rem; color: #dcdcdc; font-size: 0.9rem; }
-
-        input {
-            width: 100%;
-            padding: 0.85rem;
-            border-radius: 6px;
-            border: 1px solid #2d2d2d;
-            background: #1c1c1c;
-            color: white;
-            font-size: 1rem;
-            transition: 0.3s;
-        }
-
-        input:focus {
-            border-color: #007bff;
-            outline: none;
-            box-shadow: 0 0 8px rgba(0,123,255,0.5);
-        }
-
-        button {
-            width: 100%;
-            padding: 0.9rem;
-            border: none;
-            border-radius: 6px;
-            background: linear-gradient(135deg, #007bff, #0056b3);
-            color: white;
-            font-size: 1.05rem;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 15px rgba(0,123,255,0.4);
-        }
-
-        .error {
-            color: #ff4d4d;
-            margin-top: 1rem;
-            text-align: center;
-        }
-
-        .login-link {
-            text-align: center;
-            margin-top: 1rem;
-        }
-
-        .login-link a {
-            color: #4da6ff;
-            text-decoration: none;
-        }
-
-        .login-link a:hover {
-            text-decoration: underline;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Daftar - Wapi XCD</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap">
+  <link rel="stylesheet" href="/css/auth.css" />
 </head>
 <body>
-    <!-- Floating Animation Background -->
-    <div class="circle small"></div>
-    <div class="circle medium"></div>
-    <div class="circle large"></div>
+  <div class="auth-container">
+    <h1 class="title">Buat Akun</h1>
 
-    <div class="container">
-        <div class="title">Wapi XCD</div>
+    <% if (typeof error !== 'undefined' && error) { %>
+      <p class="alert alert-danger"><%= error %></p>
+    <% } %>
 
-        <% if (typeof error !== 'undefined' && error) { %>
-            <p class="error"><%= error %></p>
-        <% } %>
+    <form action="/api/v1/auth/register" method="POST">
+      <div class="form-group">
+        <label for="name">Nama Lengkap</label>
+        <input type="text" id="name" name="name" required>
+      </div>
+      <div class="form-group">
+        <label for="email">Alamat Email</label>
+        <input type="email" id="email" name="email" required>
+      </div>
+      <div class="form-group">
+        <label for="password">Kata Sandi</label>
+        <input type="password" id="password" name="password" required>
+      </div>
+      <div class="form-group">
+        <label for="whatsappNumber">Nomor WhatsApp</label>
+        <input type="tel" id="whatsappNumber" name="whatsappNumber" placeholder="6281234567890" required>
+      </div>
+      <button type="submit" class="btn">Daftar</button>
+    </form>
 
-        <form action="/api/v1/auth/register" method="POST">
-            <div class="form-group">
-                <label for="name">Full Name</label>
-                <input type="text" id="name" name="name" required>
-            </div>
-
-            <div class="form-group">
-                <label for="email">Email Address</label>
-                <input type="email" id="email" name="email" required>
-            </div>
-
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" required>
-            </div>
-
-            <div class="form-group">
-                <label for="whatsappNumber">WhatsApp Number</label>
-                <input type="tel" id="whatsappNumber" name="whatsappNumber" placeholder="6281234567890" required>
-            </div>
-
-            <button type="submit">Register</button>
-        </form>
-
-        <div class="login-link">
-            <p>Already have an account? <a href="/login">Login here</a>.</p>
-        </div>
+    <div class="link">
+      <p>Sudah punya akun? <a href="/login">Masuk di sini</a>.</p>
     </div>
+  </div>
 </body>
 </html>

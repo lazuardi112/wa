@@ -1,265 +1,72 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>API Documentation</title>
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #121212; color: white; margin: 0; }
-        .sidebar { position: fixed; width: 250px; height: 100%; background: #1e1e1e; padding: 1rem; }
-        .sidebar h2 { text-align: center; color: #007bff; }
-        .sidebar a { display: block; color: white; padding: 1rem; text-decoration: none; border-radius: 4px; }
-        .sidebar a:hover { background: #333; }
-        .main-content { margin-left: 270px; padding: 2rem; }
-        h1, h2 { color: #007bff; }
-        .card { background: #1e1e1e; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; }
-        .api-key-section { background: #2c2c2c; padding: 1rem; border-radius: 4px; }
-        .api-key-section code { background: #121212; padding: 0.5rem; border-radius: 4px; }
-        .btn { padding: 0.75rem 1.5rem; border: none; border-radius: 4px; background-color: #007bff; color: white; font-size: 1rem; cursor: pointer; text-decoration: none; }
-        pre { background: #2c2c2c; padding: 1rem; border-radius: 4px; white-space: pre-wrap; word-wrap: break-word; }
-        code { font-family: 'Courier New', Courier, monospace; }
-        .endpoint { background: #333; padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: bold; }
-        .tabs { display: flex; border-bottom: 1px solid #333; margin-bottom: 1rem; }
-        .tab-button { background: none; border: none; color: white; padding: 1rem; cursor: pointer; font-size: 1rem; }
-        .tab-button.active { color: #007bff; border-bottom: 2px solid #007bff; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-    </style>
-</head>
-<body>
-    <%- include('partials/sidebar', { active: 'api-docs' }) %>
-    <div class="main-content">
-        <h1>API Documentation</h1>
+<%- include('partials/header', { title: 'Dokumentasi API', active: 'api-docs' }) %>
 
-        <div class="card">
-            <h2>Your API Key</h2>
-            <div class="api-key-section">
-                <% if (apiKey) { %>
-                    <p><strong>Your new API Key:</strong> Please save this key. It will not be shown again.</p>
-                    <code><%= apiKey %></code>
-                <% } else if (apiKeyExists) { %>
-                     <p>You already have an API key. For security, it's shown only once. If lost, you must generate a new one, which will invalidate the old one.</p>
-                     <form action="/api/v1/user/generate-apikey" method="POST" onsubmit="return confirm('Are you sure? Generating a new key will invalidate your old one.');">
-                        <button type="submit" class="btn">Generate New API Key</button>
-                    </form>
-                <% } else { %>
-                    <p>You have not generated an API key yet.</p>
-                    <form action="/api/v1/user/generate-apikey" method="POST">
-                        <button type="submit" class="btn">Generate API Key</button>
-                    </form>
-                <% } %>
-            </div>
-        </div>
+<div class="header">
+  <h1>Dokumentasi API</h1>
+</div>
 
-        <div class="card">
-            <h2>API Usage</h2>
-            <h3>Authentication</h3>
-            <p>All API requests must include your API key in an <code>x-api-key</code> header.</p>
-            <pre><code>x-api-key: YOUR_API_KEY</code></pre>
+<div class="card">
+  <h2>Kunci API Anda</h2>
+  <div class="api-key-section">
+    <% if (apiKey) { %>
+      <p><strong>Kunci API baru Anda:</strong> Harap simpan kunci ini. Kunci ini tidak akan ditampilkan lagi.</p>
+      <code><%= apiKey %></code>
+    <% } else if (apiKeyExists) { %>
+      <p>Anda sudah memiliki kunci API. Untuk keamanan, kunci ini hanya ditampilkan sekali. Jika hilang, Anda harus membuat yang baru, yang akan membatalkan kunci yang lama.</p>
+      <form action="/api/v1/user/generate-apikey" method="POST" onsubmit="return confirm('Apakah Anda yakin? Membuat kunci baru akan membatalkan kunci lama Anda.');">
+        <button type="submit" class="btn">Buat Kunci API Baru</button>
+      </form>
+    <% } else { %>
+      <p>Anda belum membuat kunci API.</p>
+      <form action="/api/v1/user/generate-apikey" method="POST">
+        <button type="submit" class="btn">Buat Kunci API</button>
+      </form>
+    <% } %>
+  </div>
+</div>
 
-            <h3>Base URL</h3>
-            <p>The base URL for all API endpoints is:</p>
-            <pre><code>https://xcd.xcreate.my.id</code></pre>
+<div class="card">
+  <h2>Penggunaan API</h2>
+  <h3>Autentikasi</h3>
+  <p>Semua permintaan API harus menyertakan kunci API Anda di header <code>x-api-key</code>.</p>
+  <pre><code>x-api-key: KUNCI_API_ANDA</code></pre>
 
-            <h3>Multiple Recipients</h3>
-            <p>To send a message to multiple numbers, provide a comma-separated string in the <code>to</code> parameter.</p>
-            <pre><code>"to": "6281234567890,6289876543210"</code></pre>
-        </div>
+  <h3>URL Dasar</h3>
+  <p>URL dasar untuk semua titik akhir API adalah:</p>
+  <pre><code>https://xcd.xcreate.my.id</code></pre>
+</div>
 
-        <!-- Send Text Message -->
-        <div class="card" id="send-text">
-            <h2>Send Text Message</h2>
-            <p><span class="endpoint">POST /api/v1/message/send-text</span></p>
-            <p>Sends a simple text message. The request body should be <code>application/json</code>.</p>
+<!-- Send Text -->
+<div class="card">
+  <h2>Kirim Pesan Teks</h2>
+  <p><span class="endpoint">POST /api/v1/message/send-text</span></p>
+  <p>Badan permintaan harus berupa <code>application/json</code>.</p>
 
-            <h4>Parameters</h4>
-            <ul>
-                <li><code>deviceId</code> (integer, required): The ID of the device to send from.</li>
-                <li><code>to</code> (string, required): The recipient's phone number(s), comma-separated.</li>
-                <li><code>message</code> (string, required): The content of the message.</li>
-            </ul>
+  <div class="tabs">
+    <button class="tab-button active" data-tab="text-curl">cURL</button>
+    <button class="tab-button" data-tab="text-php">PHP</button>
+    <button class="tab-button" data-tab="text-js">JavaScript</button>
+  </div>
 
-            <div class="tabs">
-                <button class="tab-button active" onclick="showTab(event, 'text-curl')">cURL</button>
-                <button class="tab-button" onclick="showTab(event, 'text-php')">PHP</button>
-                <button class="tab-button" onclick="showTab(event, 'text-js')">JavaScript</button>
-            </div>
+  <div id="text-curl" class="tab-content active"><pre>...</pre></div>
+  <div id="text-php" class="tab-content"><pre>...</pre></div>
+  <div id="text-js" class="tab-content"><pre>...</pre></div>
+</div>
 
-            <div id="text-curl" class="tab-content active">
-                <pre><code>curl -X POST https://xcd.xcreate.my.id/api/v1/message/send-text \
--H "Content-Type: application/json" \
--H "x-api-key: YOUR_API_KEY" \
--d '{
-  "deviceId": 1,
-  "to": "6281234567890",
-  "message": "Hello from the API!"
-}'</code></pre>
-            </div>
-            <div id="text-php" class="tab-content">
-                <pre><code>&lt;?php
-$apiKey = 'YOUR_API_KEY';
-$url = 'https://xcd.xcreate.my.id/api/v1/message/send-text';
-$data = [
-    'deviceId' => 1,
-    'to' => '6281234567890',
-    'message' => 'Hello from PHP!'
-];
+<!-- Send Media -->
+<div class="card">
+  <h2>Kirim Pesan Media</h2>
+  <p><span class="endpoint">POST /api/v1/message/send-image</span> atau <span class="endpoint">POST /api/v1/message/send-document</span></p>
+  <p>Permintaan harus dikirim sebagai <code>multipart/form-data</code>.</p>
 
-$ch = curl_init($url);
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($ch, CURLOPT_HTTPHEADER, [
-    'Content-Type: application/json',
-    'x-api-key: ' . $apiKey
-]);
-curl_setopt($ch, CURLOPT_POST, true);
-curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+  <div class="tabs">
+    <button class="tab-button active" data-tab="media-curl">cURL</button>
+    <button class="tab-button" data-tab="media-php">PHP</button>
+    <button class="tab-button" data-tab="media-js">JavaScript</button>
+  </div>
 
-$response = curl_exec($ch);
-curl_close($ch);
+  <div id="media-curl" class="tab-content active"><pre>...</pre></div>
+  <div id="media-php" class="tab-content"><pre>...</pre></div>
+  <div id="media-js" class="tab-content"><pre>...</pre></div>
+</div>
 
-echo $response;
-?&gt;</code></pre>
-            </div>
-            <div id="text-js" class="tab-content">
-                <pre><code>// Can be run in a browser or Node.js environment with 'node-fetch'
-async function sendText() {
-    const apiKey = 'YOUR_API_KEY';
-    const url = 'https://xcd.xcreate.my.id/api/v1/message/send-text';
-    const data = {
-        deviceId: 1,
-        to: '6281234567890',
-        message: 'Hello from JavaScript!'
-    };
-
-    try {
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': apiKey
-            },
-            body: JSON.stringify(data)
-        });
-        const result = await response.json();
-        console.log(result);
-    } catch (error) {
-        console.error('Error:', error);
-    }
-}
-
-sendText();</code></pre>
-            </div>
-        </div>
-
-        <!-- Send Image/Document -->
-        <% ['image', 'document'].forEach(type => { %>
-        <div class="card" id="send-<%= type %>">
-            <h2>Send <%= type.charAt(0).toUpperCase() + type.slice(1) %></h2>
-            <p><span class="endpoint">POST /api/v1/message/send-<%= type %></span></p>
-            <p>Sends a file. The request must be sent as <code>multipart/form-data</code>.</p>
-
-            <h4>Form Fields</h4>
-            <ul>
-                <li><code>deviceId</code> (integer, required): The ID of the device.</li>
-                <li><code>to</code> (string, required): The recipient's number(s).</li>
-                <li><code>media</code> (file, required): The <%= type %> file to upload.</li>
-                <li><code>message</code> (string, optional): A caption for the <%= type %>.</li>
-            </ul>
-
-            <div class="tabs">
-                <button class="tab-button active" onclick="showTab(event, '<%= type %>-curl')">cURL</button>
-                <button class="tab-button" onclick="showTab(event, '<%= type %>-php')">PHP</button>
-                <button class="tab-button" onclick="showTab(event, '<%= type %>-js')">JavaScript</button>
-            </div>
-
-            <div id="<%= type %>-curl" class="tab-content active">
-                <pre><code>curl -X POST https://xcd.xcreate.my.id/api/v1/message/send-<%= type %> \
--H "x-api-key: YOUR_API_KEY" \
--F "deviceId=1" \
--F "to=6281234567890" \
--F "message=Check out this <%= type %>!" \
--F "media=@/path/to/your/<%= type === 'image' ? 'image.jpg' : 'file.pdf' %>"</code></pre>
-            </div>
-             <div id="<%= type %>-php" class="tab-content">
-                <pre><code>&lt;?php
-$apiKey = 'YOUR_API_KEY';
-$url = 'https://xcd.xcreate.my.id/api/v1/message/send-<%= type %>';
-$filePath = '/path/to/your/<%= type === 'image' ? 'image.jpg' : 'file.pdf' %>';
-
-// Using CURLFile is the recommended way to upload files in PHP.
-$file = new CURLFile($filePath, mime_content_type($filePath), basename($filePath));
-
-$data = [
-    'deviceId' => 1,
-    'to' => '6281234567890',
-    'message' => 'Here is a <%= type %> from PHP!',
-    'media' => $file
-];
-
-$ch = curl_init($url);
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($ch, CURLOPT_HTTPHEADER, ['x-api-key: ' . $apiKey]);
-curl_setopt($ch, CURLOPT_POST, true);
-curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
-
-$response = curl_exec($ch);
-curl_close($ch);
-
-echo $response;
-?&gt;</code></pre>
-            </div>
-            <div id="<%= type %>-js" class="tab-content">
-                <pre><code>// This code is for a browser environment with a file input.
-// &lt;input type="file" id="fileInput" /&gt;
-
-async function sendFile() {
-    const apiKey = 'YOUR_API_KEY';
-    const url = 'https://xcd.xcreate.my.id/api/v1/message/send-<%= type %>';
-    const fileInput = document.getElementById('fileInput');
-
-    if (fileInput.files.length === 0) {
-        alert('Please select a file!');
-        return;
-    }
-
-    const formData = new FormData();
-    formData.append('deviceId', '1');
-    formData.append('to', '6281234567890');
-    formData.append('message', 'File from a local HTML page!');
-    formData.append('media', fileInput.files[0]);
-
-    try {
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'x-api-key': apiKey
-                // Content-Type is set automatically by the browser for FormData
-            },
-            body: formData
-        });
-        const result = await response.json();
-        console.log(result);
-    } catch (error) {
-        console.error('Error:', error);
-    }
-}</code></pre>
-            </div>
-        </div>
-        <% }); %>
-
-    </div>
-    <script>
-        function showTab(event, tabId) {
-            const parent = event.target.closest('.card');
-            // Hide all tab contents in the current card
-            parent.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
-            // Deactivate all tab buttons in the current card
-            parent.querySelectorAll('.tab-button').forEach(tb => tb.classList.remove('active'));
-            // Show the selected tab content
-            parent.querySelector('#' + tabId).classList.add('active');
-            // Activate the clicked tab button
-            event.target.classList.add('active');
-        }
-    </script>
-</body>
-</html>
+<%- include('partials/footer') %>

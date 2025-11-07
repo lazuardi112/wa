@@ -1,155 +1,53 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Subscribe</title>
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #121212; color: white; margin: 0; }
-        .sidebar { position: fixed; width: 250px; height: 100%; background: #1e1e1e; padding: 1rem; }
-        .sidebar h2 { text-align: center; color: #007bff; }
-        .sidebar a { display: block; color: white; padding: 1rem; text-decoration: none; border-radius: 4px; }
-        .sidebar a:hover { background: #333; }
-        .main-content { margin-left: 270px; padding: 2rem; }
-        h1 { color: #007bff; }
-        .packages { display: flex; gap: 2rem; justify-content: center; margin-top: 2rem; }
-        .package-card { background: #1e1e1e; padding: 2rem; border-radius: 8px; text-align: center; width: 250px; }
-        .package-card h2 { color: #007bff; margin-top: 0; }
-        .package-card.current { border: 2px solid #007bff; }
-        .price { font-size: 2rem; font-weight: bold; margin: 1rem 0; }
-        ul { list-style: none; padding: 0; text-align: left; }
-        li { margin-bottom: 0.5rem; }
-        .btn-upgrade { background-color: #28a745; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 4px; font-size: 1rem; cursor: pointer; margin-top: 1.5rem; }
+<%- include('partials/header', { title: 'Langganan', active: 'subscribe' }) %>
 
-        /* QR Code Modal Styles */
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.7); }
-        .modal-content { background-color: #2a2a2a; margin: 10% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 400px; text-align: center; border-radius: 8px; }
-        .close-button { color: #aaa; float: right; font-size: 28px; font-weight: bold; }
-        .close-button:hover, .close-button:focus { color: white; text-decoration: none; cursor: pointer; }
-        #qr-code-image { max-width: 100%; height: auto; margin-top: 1rem; }
-    </style>
-</head>
-<body>
-    <%- include('partials/sidebar', { active: 'subscribe' }) %>
+<div class="header">
+  <h1>Paket Langganan</h1>
+</div>
 
-    <div class="main-content">
-        <h1>Subscription Plans</h1>
-        <div class="packages">
-            <% if (packages && packages.length > 0) { %>
-                <% packages.forEach(pkg => { %>
-                    <div class="package-card <%= currentPackage.id === pkg.id ? 'current' : '' %>">
-                        <h2><%= pkg.name %></h2>
-                        <div class="price">IDR <%= pkg.price.toLocaleString() %> / month</div>
-                        <ul>
-                            <li><strong><%= pkg.maxDevices %></strong> Device(s)</li>
-                            <li><strong><%= pkg.messageLimit.toLocaleString() %></strong> Messages/Day</li>
-                            <li>API Access: <strong><%= pkg.apiAccess ? 'Yes' : 'No' %></strong></li>
-                            <li>Duration: <strong><%= pkg.durationDays %></strong> Days</li>
-                        </ul>
-                        <% if (currentPackage.id !== pkg.id && pkg.name !== 'Free') { %>
-                            <div class="form-group" style="margin-top: 1rem;">
-                                <label for="months-<%= pkg.id %>">Months:</label>
-                                <input type="number" id="months-<%= pkg.id %>" value="1" min="1" max="12" style="width: 100px; text-align: center;">
-                            </div>
-                            <button class="btn-upgrade" data-package-id="<%= pkg.id %>">
-                                Upgrade to Premium
-                            </button>
-                        <div id="payment-error-<%= pkg.id %>" style="color: #f8d7da; margin-top: 10px; font-size: 0.9em; text-align: center;"></div>
-                        <% } else if (currentPackage.id === pkg.id) { %>
-                            <p><strong>(Current Plan)</strong></p>
-                        <% } %>
-                    </div>
-                <% }); %>
-            <% } else { %>
-                <p>Saat ini tidak ada paket langganan yang tersedia. Silakan hubungi dukungan.</p>
-            <% } %>
-        </div>
+<div class="packages-grid">
+  <% if (packages && packages.length > 0) { %>
+    <% packages.forEach(pkg => { %>
+      <div class="card package-card <%= currentPackage.id === pkg.id ? 'current' : '' %>">
+        <h2><%= pkg.name %></h2>
+        <div class="price">IDR <%= pkg.price.toLocaleString() %> / bulan</div>
+        <ul>
+          <li><strong><%= pkg.maxDevices %></strong> Perangkat</li>
+          <li><strong><%= pkg.messageLimit.toLocaleString() %></strong> Pesan/Hari</li>
+          <li>Akses API: <strong><%= pkg.apiAccess ? 'Ya' : 'Tidak' %></strong></li>
+          <li>Durasi: <strong><%= pkg.durationDays %></strong> Hari</li>
+        </ul>
+        <% if (currentPackage.id !== pkg.id && pkg.name !== 'Free') { %>
+          <div class="form-group" style="margin-top: 1rem;">
+            <label for="months-<%= pkg.id %>">Bulan:</label>
+            <input type="number" id="months-<%= pkg.id %>" value="1" min="1" max="12">
+          </div>
+          <button class="btn btn-upgrade" data-package-id="<%= pkg.id %>">
+            Tingkatkan ke Premium
+          </button>
+          <div id="payment-error-<%= pkg.id %>" class="payment-error"></div>
+        <% } else if (currentPackage.id === pkg.id) { %>
+          <p><strong>(Paket Saat Ini)</strong></p>
+        <% } %>
+      </div>
+    <% }); %>
+  <% } else { %>
+    <p>Saat ini tidak ada paket langganan yang tersedia. Silakan hubungi dukungan.</p>
+  <% } %>
+</div>
+
+<!-- Modal QR Code -->
+<div id="qr-modal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Pindai Kode QR untuk Membayar</h2>
+      <span class="close-btn" id="close-qr-modal">&times;</span>
     </div>
-
-    <!-- QR Code Modal -->
-    <div id="qr-modal" class="modal">
-        <div class="modal-content">
-            <span class="close-button" onclick="closeModal()">&times;</span>
-            <h2>Scan QR Code to Pay</h2>
-            <p>Please use your e-wallet app to scan the code below.</p>
-            <img id="qr-code-image" src="" alt="QR Code">
-            <p>After payment, your subscription will be updated automatically.</p>
-        </div>
+    <div class="modal-body">
+      <p>Silakan gunakan aplikasi e-wallet Anda untuk memindai kode di bawah ini.</p>
+      <img id="qr-code-image" src="" alt="QR Code">
+      <p>Setelah pembayaran, langganan Anda akan diperbarui secara otomatis.</p>
     </div>
+  </div>
+</div>
 
-    <script type="text/javascript">
-        const modal = document.getElementById('qr-modal');
-        const qrCodeImage = document.getElementById('qr-code-image');
-
-        function closeModal() {
-            modal.style.display = 'none';
-        }
-
-        window.onclick = function(event) {
-            if (event.target == modal) {
-                closeModal();
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            const packageContainer = document.querySelector('.packages');
-
-            packageContainer.addEventListener('click', async (event) => {
-                if (!event.target.matches('.btn-upgrade')) {
-                    return;
-                }
-
-                const payButton = event.target;
-                const packageId = payButton.dataset.packageId;
-                const errorContainer = document.getElementById(`payment-error-${packageId}`);
-
-                // Clear previous errors and disable the button
-                if (errorContainer) errorContainer.textContent = '';
-                payButton.disabled = true;
-                payButton.textContent = 'Processing...';
-
-                try {
-                    const monthsInput = document.getElementById(`months-${packageId}`);
-                    const months = monthsInput ? monthsInput.value : 1;
-
-                    const response = await fetch(`/api/v1/payment/subscribe/${packageId}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ months }),
-                    });
-
-                    const data = await response.json();
-
-                    if (!response.ok) {
-                        throw new Error(data.message || 'Failed to initiate payment');
-                    }
-
-                    if (data.qr_code_url) {
-                        qrCodeImage.src = data.qr_code_url;
-                        modal.style.display = 'block';
-                    } else {
-                        const qrAction = data.actions?.find(action => action.name === 'generate-qr-code');
-                        if (qrAction) {
-                            qrCodeImage.src = qrAction.url;
-                            modal.style.display = 'block';
-                        } else {
-                            throw new Error('QR Code URL not found in the response.');
-                        }
-                    }
-
-                } catch (error) {
-                    console.error('Payment error:', error);
-                    if (errorContainer) {
-                        errorContainer.textContent = `${error.message}`;
-                    } else {
-                        alert(`${error.message}`); // Fallback
-                    }
-                } finally {
-                    payButton.disabled = false;
-                    payButton.textContent = 'Upgrade to Premium';
-                }
-            });
-        });
-    </script>
-</body>
-</html>
+<%- include('partials/footer') %>

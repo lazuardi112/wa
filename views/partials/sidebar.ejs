@@ -1,254 +1,28 @@
-<!doctype html>
-<html lang="id">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Wapi XCD — Dashboard</title>
-
-  <!-- Boxicons -->
-  <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
-
-  <!-- Font -->
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
-
-  <style>
-    :root{
-      --bg: #0f141a;
-      --sidebar-bg: #11161d;
-      --hover-bg: #1b232c;
-      --active-bg: #1f2a35;
-      --border: rgba(255,255,255,0.06);
-      --text: #e8eef5;
-      --text-muted: #9ba6b4;
-      --accent: #3b82f6;
-    }
-
-    *{ box-sizing:border-box; }
-
-    body{
-      margin:0;
-      font-family: "Poppins", sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      display:flex;
-      min-height:100vh;
-    }
-
-    /* SIDEBAR */
-    .sidebar {
-      width: 250px;
-      background: var(--sidebar-bg);
-      border-right:1px solid var(--border);
-      padding:18px 14px;
-      display:flex;
-      flex-direction:column;
-      gap:16px;
-      transition: width .3s ease;
-    }
-
-    .sidebar.collapsed {
-      width: 72px;
-    }
-
-    /* BRAND */
-    .brand{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      padding:6px 6px;
-    }
-
-    .logo{
-      width:40px;
-      height:40px;
-      background:#3b82f6;
-      border-radius:10px;
-      display:flex;
-      justify-content:center;
-      align-items:center;
-      color:white;
-      font-size:20px;
-    }
-
-    .brand .title{
-      transition:opacity .25s ease;
-    }
-
-    .brand .title .main{
-      font-size:16px;
-      font-weight:700;
-    }
-
-    .brand .title .sub{
-      font-size:11px;
-      color:var(--text-muted);
-    }
-
-    .sidebar.collapsed .title{
-      opacity:0;
-      pointer-events:none;
-    }
-
-    /* TOGGLE BUTTON */
-    .toggle-btn{
-      position:absolute;
-      right:-12px;
-      top:10px;
-      background: var(--sidebar-bg);
-      width:30px;
-      height:30px;
-      border-radius:8px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      cursor:pointer;
-      border:1px solid var(--border);
-    }
-
-    /* NAVIGATION */
-    .nav{
-      display:flex;
-      flex-direction:column;
-    }
-
-    .nav a{
-      display:flex;
-      align-items:center;
-      gap:12px;
-      color:var(--text);
-      padding:10px 12px;
-      border-radius:8px;
-      text-decoration:none;
-      font-size:14px;
-      margin-bottom:4px;
-      white-space:nowrap;
-      transition: background .25s ease, padding .25s ease;
-    }
-
-    .nav a i{
-      font-size:20px;
-      width:22px;
-      text-align:center;
-    }
-
-    .nav a:hover{
-      background: var(--hover-bg);
-    }
-
-    .nav a.active{
-      background: var(--active-bg);
-      border-left:3px solid var(--accent);
-      padding-left:9px;
-      color:white;
-    }
-
-    .sidebar.collapsed .nav a span.text{
-      opacity:0;
-      pointer-events:none;
-      width:0;
-    }
-
-    /* FOOTER */
-    .sidebar-footer{
-      margin-top:auto;
-      padding-top:10px;
-      border-top:1px solid var(--border);
-      display:flex;
-      align-items:center;
-      gap:10px;
-      font-size:12px;
-      color:var(--text-muted);
-    }
-
-    .sidebar.collapsed .sidebar-footer .footer-text{
-      opacity:0;
-      pointer-events:none;
-    }
-
-    .status-dot{
-      width:8px;
-      height:8px;
-      border-radius:50%;
-      background:#22c55e;
-    }
-
-    /* RESPONSIVE */
-    @media(max-width:880px){
-      .sidebar{
-        position:fixed;
-        left:0;
-        top:0;
-        bottom:0;
-        transform:translateX(-100%);
-        z-index:99;
-      }
-
-      .sidebar.show{
-        transform:translateX(0);
-      }
-
-      body.mobile-open{
-        overflow:hidden;
-      }
-    }
-  </style>
-</head>
-
-<body>
-
-  <aside class="sidebar" id="sidebar">
-    <div class="brand">
-      <div class="logo"><i class='bx bxl-whatsapp'></i></div>
-      <div class="title">
-        <div class="main">Wapi XCD</div>
-        <div class="sub">WhatsApp Gateway</div>
-      </div>
-      <div class="toggle-btn" id="toggleBtn">
-        <i class='bx bx-chevron-left'></i>
-      </div>
+<aside class="sidebar" id="sidebar">
+  <div class="brand">
+    <div class="logo"><i class='bx bxl-whatsapp'></i></div>
+    <div class="title">
+      <div class="main">Wapi XCD</div>
+      <div class="sub">Gateway WhatsApp</div>
     </div>
+  </div>
 
-    <nav class="nav">
-      <a href="/dashboard" class="<%= active === 'dashboard' ? 'active' : '' %>"><i class='bx bxs-dashboard'></i><span class="text">Overview</span></a>
-      <a href="/devices" class="<%= active === 'devices' ? 'active' : '' %>"><i class='bx bxs-devices'></i><span class="text">Devices</span></a>
-      <a href="/messaging" class="<%= active === 'messaging' ? 'active' : '' %>"><i class='bx bxs-send'></i><span class="text">Send Message</span></a>
-      <a href="/bot" class="<%= active === 'bot' ? 'active' : '' %>"><i class='bx  bx bxs-send'></i> <span class="text">WhatsApp Bot</span></a>
-      <a href="/api-docs" class="<%= active === 'api-docs' ? 'active' : '' %>"><i class='bx bxs-book'></i><span class="text">API Docs</span></a>
-      <a href="/subscribe" class="<%= active === 'subscribe' ? 'active' : '' %>"><i class='bx bxs-star'></i><span class="text">Subscription</span></a>
-      <a href="/history" class="<%= active === 'history' ? 'active' : '' %>">
-  <i class='bx bx-history'></i><span class="text">History</span>
-</a>
+  <nav class="nav">
+    <a href="/dashboard" class="<%= active === 'dashboard' ? 'active' : '' %>"><i class='bx bxs-dashboard'></i><span class="text">Dasbor</span></a>
+    <a href="/devices" class="<%= active === 'devices' ? 'active' : '' %>"><i class='bx bxs-devices'></i><span class="text">Perangkat</span></a>
+    <a href="/messaging" class="<%= active === 'messaging' ? 'active' : '' %>"><i class='bx bxs-send'></i><span class="text">Kirim Pesan</span></a>
+    <a href="/bot" class="<%= active === 'bot' ? 'active' : '' %>"><i class='bx bx-bot'></i> <span class="text">Bot WhatsApp</span></a>
+    <a href="/api-docs" class="<%= active === 'api-docs' ? 'active' : '' %>"><i class='bx bxs-book'></i><span class="text">Dokumentasi API</span></a>
+    <a href="/subscribe" class="<%= active === 'subscribe' ? 'active' : '' %>"><i class='bx bxs-star'></i><span class="text">Langganan</span></a>
+    <a href="/history" class="<%= active === 'history' ? 'active' : '' %>"><i class='bx bx-history'></i><span class="text">Riwayat</span></a>
+    <a href="/logout"><i class='bx bxs-log-out'></i><span class="text">Keluar</span></a>
+  </nav>
 
-      <a href="/logout"><i class='bx bxs-log-out'></i><span class="text">Logout</span></a>
-    </nav>
-
-    <div class="sidebar-footer">
-      <div class="status-dot"></div>
-      <div class="footer-text">
-        <div style="font-weight:600">Online</div>
-        <div style="font-size:11px;">Active session</div>
-      </div>
+  <div class="sidebar-footer">
+    <!-- Theme toggle -->
+    <div class="theme-toggle" id="theme-toggle">
+        <i class='bx bx-sun'></i>
+        <i class='bx bx-moon'></i>
     </div>
-  </aside>
-
-  <script>
-    const sidebar = document.getElementById("sidebar");
-    const toggleBtn = document.getElementById("toggleBtn");
-
-    toggleBtn.addEventListener("click", () => {
-      sidebar.classList.toggle("collapsed");
-    });
-
-    /* MOBILE NAV – TAP LOGO TO OPEN */
-    window.addEventListener("click", (e) => {
-      if(window.innerWidth > 880) return;
-
-      if(e.target.closest(".logo")){
-        sidebar.classList.toggle("show");
-        document.body.classList.toggle("mobile-open");
-      }
-    });
-  </script>
-
-</body>
-</html>
+  </div>
+</aside>

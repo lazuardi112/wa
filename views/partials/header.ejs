@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= title %> | Wapi XCD</title>
+
+  <!-- Fonts and Icons -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap">
+  <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
+
+  <!-- Main Stylesheet -->
+  <link rel="stylesheet" href="/css/style.css" />
+
+  <style>
+    /* Basic layout styles to avoid FOUC */
+    body {
+      display: flex;
+      background-color: #f0f2f5;
+    }
+    .main-content {
+      flex-grow: 1;
+      transition: margin-left 0.3s ease;
+    }
+  </style>
+</head>
+<body>
+  <%- include('sidebar', { active: active }) %>
+  <div class="main-content">
+    <div class="container fade-in">
