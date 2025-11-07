@@ -61,7 +61,15 @@ module.exports = (sequelize, DataTypes) => {
         key: 'id',
       }
     },
-    packageExpiresAt: DataTypes.DATE
+    packageExpiresAt: DataTypes.DATE,
+    // These fields were missing from the running version of the model
+    messageCount: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0
+    },
+    lastResetDate: {
+        type: DataTypes.DATE
+    }
   }, {
     sequelize,
     modelName: 'User',
