@@ -21,11 +21,9 @@ const renderDashboard = async (req, res) => {
         };
 
         res.render('dashboard', {
-            title: 'Dasbor',
-            active: 'dashboard',
-            user: req.user,
+            user: req.user, // Use the full, fresh user object
             data: dashboardData,
-            currentPackage: req.package
+            currentPackage: req.package // Use package from middleware
         });
     } catch (error) {
         console.error('Dashboard Page Error:', error);
@@ -40,8 +38,6 @@ const renderDevicesPage = async (req, res) => {
         const canAddDevice = devices.length < req.package.maxDevices;
 
         res.render('devices', {
-            title: 'Perangkat',
-            active: 'devices',
             user: req.user,
             devices,
             canAddDevice,
@@ -57,14 +53,7 @@ const renderDevicesPage = async (req, res) => {
 const renderMessagingPage = async (req, res) => {
     try {
         const devices = await db.Device.findAll({ where: { userId: req.user.id } });
-        res.render('messaging', {
-            title: 'Kirim Pesan',
-            user: req.user,
-            devices,
-            active: 'messaging',
-            error: req.query.error || null,
-            success: req.query.success || null
-        });
+        res.render('messaging', { devices, query: req.query });
     } catch (error) {
         console.error('Messaging Page Error:', error);
         res.status(500).send('Error loading messaging page.');
@@ -122,9 +111,6 @@ const renderApiDocsPage = async (req, res) => {
         const apiKeyExists = await db.ApiKey.findOne({ where: { userId: req.user.id } });
 
         res.render('api-docs', {
-            title: 'Dokumentasi API',
-            active: 'api-docs',
-            user: req.user,
             apiKey: newApiKey || null,
             apiKeyExists: !!apiKeyExists
         });
@@ -149,12 +135,9 @@ const renderSubscribePage = async (req, res) => {
         const packages = await db.Package.findAll();
 
         res.render('subscribe', {
-            title: 'Langganan',
-            active: 'subscribe',
-            user: req.user,
             midtransClientKey: clientKeySetting.value,
             packages,
-            currentPackage: req.package
+            currentPackage: req.package // Use package from middleware
         });
     } catch (error) {
         console.error('Subscribe Page Error:', error);
@@ -191,12 +174,7 @@ const renderHistoryPage = async (req, res) => {
             include: ['package'],
             order: [['createdAt', 'DESC']],
         });
-        res.render('history', {
-            title: 'Riwayat Transaksi',
-            active: 'history',
-            user: req.user,
-            transactions
-        });
+        res.render('history', { user: req.user, transactions });
     } catch (error) {
         console.error('History Page Error:', error);
         res.status(500).send('Error loading transaction history.');

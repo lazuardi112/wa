@@ -73,15 +73,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     socket.on('status_update', (data) => {
         if (data.status === 'CONNECTED' && data.instanceId === currentInstanceId) {
-            alert(data.message || 'Perangkat berhasil terhubung!');
-            window.location.reload();
+            Swal.fire({
+                icon: 'success',
+                title: 'Terhubung!',
+                text: data.message || 'Perangkat berhasil terhubung!',
+                timer: 2000,
+                showConfirmButton: false
+            }).then(() => window.location.reload());
             return;
         }
 
         const row = document.querySelector(`tr[data-instance-id="${data.instanceId}"]`);
         if (row) {
-             alert(`Status perangkat "${row.querySelector('td:first-child').innerText}" berubah menjadi: ${data.status}. Halaman akan dimuat ulang.`);
-             window.location.reload();
+            Swal.fire({
+                icon: 'info',
+                title: 'Pembaruan Status',
+                text: `Status perangkat "${row.querySelector('td:first-child').innerText}" berubah menjadi: ${data.status}. Halaman akan dimuat ulang.`,
+            }).then(() => window.location.reload());
         }
     });
 
@@ -118,7 +126,11 @@ document.addEventListener('DOMContentLoaded', () => {
     generateQrBtn.addEventListener('click', async () => {
         const deviceName = deviceNameInput.value.trim();
         if (!deviceName) {
-            alert('Silakan masukkan nama untuk perangkat.');
+            Swal.fire({
+                icon: 'warning',
+                title: 'Input Diperlukan',
+                text: 'Silakan masukkan nama untuk perangkat.'
+            });
             return;
         }
 
@@ -187,25 +199,46 @@ async function handleReconnect(deviceId, instanceId) {
 }
 
 async function deleteDevice(deviceId) {
-  if (!confirm('Apakah Anda yakin ingin menghapus perangkat ini? Tindakan ini tidak dapat dibatalkan.')) {
-      return;
-  }
+    const result = await Swal.fire({
+        title: 'Apakah Anda yakin?',
+        text: "Tindakan ini tidak dapat dibatalkan.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Ya, hapus!',
+        cancelButtonText: 'Batal'
+    });
 
-  try {
-      const response = await fetch(`/api/v1/devices/${deviceId}`, {
-          method: 'DELETE',
-      });
+    if (!result.isConfirmed) {
+        return;
+    }
 
-      if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || 'Gagal menghapus perangkat.');
-      }
+    try {
+        const response = await fetch(`/api/v1/devices/${deviceId}`, {
+            method: 'DELETE',
+        });
 
-      alert('Perangkat berhasil dihapus.');
-      window.location.reload();
-  } catch (error) {
-      alert(`Error: ${error.message}`);
-  }
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Gagal menghapus perangkat.');
+        }
+
+        await Swal.fire({
+            icon: 'success',
+            title: 'Dihapus!',
+            text: 'Perangkat berhasil dihapus.',
+            timer: 2000,
+            showConfirmButton: false
+        });
+        window.location.reload();
+    } catch (error) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Oops...',
+            text: `Error: ${error.message}`
+        });
+    }
 }
 
 // --- Messaging Page Logic ---
@@ -301,7 +334,11 @@ if (document.querySelector('.packages-grid')) {
           if (errorContainer) {
               errorContainer.textContent = `${error.message}`;
           } else {
-              alert(`${error.message}`);
+              Swal.fire({
+                  icon: 'error',
+                  title: 'Kesalahan Pembayaran',
+                  text: error.message
+              });
           }
       } finally {
           payButton.disabled = false;
