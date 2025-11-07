@@ -41,7 +41,7 @@
       </div>
       <div class="card">
         <h3>Messages Sent Today</h3>
-        <p><%= data?.messageCount || 0 %> / <%= user.messageLimit.toLocaleString() %></p>
+        <p><%= user.messageCount.toLocaleString() %> / <%= user.messageLimit.toLocaleString() %></p>
       </div>
     </div>
   </div>
