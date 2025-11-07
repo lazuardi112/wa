@@ -67,25 +67,34 @@ const processMessage = async (sock, msg, instanceId, deviceId) => {
             });
         }
 
-        // Strict prefix matching
-        const matchedFlow = flowsToSearch.find(flow => messageText === flow.prefix.toLowerCase());
+        // --- TOTAL BOT LOGIC OVERHAUL ---
 
-        // ✅ FIX: wrap response logic in correct try structure
-        if (matchedFlow) {
+        // 1. Find all possible matching flows using "startsWith" logic.
+        const matchingFlows = flowsToSearch.filter(flow => messageText.startsWith(flow.prefix.toLowerCase()));
 
-            // Keep conversation alive
-            if (currentState) currentState.lastInteraction = Date.now();
+        let bestMatch = null;
+        if (matchingFlows.length > 1) {
+            // 2. If multiple matches, find the one with the longest prefix (most specific).
+            bestMatch = matchingFlows.reduce((prev, current) =>
+                (prev.prefix.length > current.prefix.length) ? prev : current
+            );
+        } else if (matchingFlows.length === 1) {
+            bestMatch = matchingFlows[0];
+        }
 
-            // Reset daily message limit
-            if (lastReset !== today) {
-                await db.User.update(
-                    { messageCount: 0, lastResetDate: new Date() },
-                    { where: { id: user.id } }
-                );
+        if (bestMatch) {
+            // Keep conversation alive if it's ongoing
+            if (currentState) {
+                currentState.lastInteraction = Date.now();
             }
 
-            // ✅ Get bot responses properly
-            const responses = JSON.parse(matchedFlow.responsesJson || "[]");
+            // Reset daily message limit if it's a new day
+            if (lastReset !== today) {
+                await user.update({ messageCount: 0, lastResetDate: new Date() });
+            }
+
+            // 3. Correctly parse the `response` column which is of type JSON.
+            const responses = bestMatch.response || []; // It's already JSON, no need for JSON.parse
 
             let textMessage = "";
             let imageUrl = null;
@@ -97,23 +106,23 @@ const processMessage = async (sock, msg, instanceId, deviceId) => {
                     textMessage += res.content + "\n";
                 }
             }
-
             textMessage = textMessage.trim();
 
+            // Construct the message payload
             const messagePayload = {};
             if (imageUrl) {
                 messagePayload.image = { url: imageUrl };
-                if (textMessage) messagePayload.caption = textMessage;
+                if (textMessage) {
+                    messagePayload.caption = textMessage;
+                }
             } else if (textMessage) {
                 messagePayload.text = textMessage;
             }
 
+            // Only send a reply and increment count if there's something to send
             if (Object.keys(messagePayload).length > 0) {
-                await db.User.increment("messageCount", {
-                    by: 1,
-                    where: { id: user.id }
-                });
                 await sock.sendMessage(sender, messagePayload);
+                await user.increment("messageCount", { by: 1 });
             }
 
             // Continue or end conversation
