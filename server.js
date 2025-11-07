@@ -28,6 +28,8 @@ try {
 
     // --- 3. View Engine Configuration (EJS) ---
     console.log("3. Configuring view engine...");
+    const ejs = require('ejs');
+    app.engine('ejs', ejs.__express);
     app.set('view engine', 'ejs');
     app.set('views', path.join(__dirname, 'views'));
     console.log("   View engine configured.");
@@ -41,6 +43,7 @@ try {
     app.post('/notif/midtrans', paymentController.handleMidtransNotification);
 
     app.use(express.urlencoded({ extended: true }));
+    app.use(express.static(path.join(__dirname, 'public')));
     console.log("   Middleware applied.");
 
     // --- 5. Session Configuration ---
@@ -75,11 +78,11 @@ try {
     const viewController = require('./controllers/viewController');
 
     // Public routes must be defined BEFORE protected routes
-    app.get('/login', redirectIfLoggedIn, (req, res) => res.render('login', { query: req.query || {} }));
-    app.get('/register', redirectIfLoggedIn, (req, res) => res.render('register', { query: req.query || {} }));
+    app.get('/login', redirectIfLoggedIn, (req, res) => res.render('login', { error: req.query.error || null }));
+    app.get('/register', redirectIfLoggedIn, (req, res) => res.render('register', { error: req.query.error || null }));
     app.get('/verify-otp', redirectIfLoggedIn, (req, res) => {
         if (!req.query.userId) return res.redirect('/register');
-        res.render('verify-otp', { query: req.query || {}, userId: req.query.userId });
+        res.render('verify-otp', { error: req.query.error || null, userId: req.query.userId });
     });
     app.get('/', (req, res) => {
         // If the user is logged in, redirect to dashboard. Otherwise, show landing page.
