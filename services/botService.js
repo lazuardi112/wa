@@ -127,12 +127,12 @@ const processMessage = async (sock, msg, instanceId, deviceId) => {
 
             // Continue or end conversation
             const children = await db.BotFlow.findAll({
-                where: { parentId: matchedFlow.id, isEnabled: true }
+                where: { parentId: bestMatch.id, isEnabled: true }
             });
 
             if (children.length > 0) {
                 conversationState.set(sender, {
-                    currentFlowId: matchedFlow.id,
+                    currentFlowId: bestMatch.id,
                     lastInteraction: Date.now()
                 });
             } else {
