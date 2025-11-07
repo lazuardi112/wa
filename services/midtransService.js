@@ -39,7 +39,7 @@ const createTransaction = async (userId, orderId, amount) => {
 
     const url = config.isProduction
         ? 'https://api.midtrans.com/v2/charge'
-        : 'https://api.sandbox.midtrans.com/v2/charge';
+        : 'https://api.midtrans.com/v2/charge';
 
     const headers = {
         'Content-Type': 'application/json',

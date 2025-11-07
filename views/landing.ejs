@@ -1,43 +1,203 @@
 <%- include('partials/landing_header') %>
 
-<header class="hero-section text-white text-center">
-    <div class="container">
-        <h1 class="display-4">Gateway WhatsApp Terpercaya Anda</h1>
-        <p class="lead">Kirim pesan massal, integrasikan dengan API, dan otomatiskan komunikasi Anda dengan mudah.</p>
-        <a href="/register" class="btn btn-lg btn-success">Mulai Sekarang Gratis</a>
+<!-- AOS Animation Library -->
+<link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+
+<style>
+    body {
+        background: #f8fafc;
+        overflow-x: hidden;
+    }
+
+    /* ===========================
+       HERO MODERN PARALLAX
+    ============================ */
+    .hero-modern {
+        position: relative;
+        background: linear-gradient(135deg, #4f46e5, #9333ea);
+        color: white;
+        padding: 150px 20px;
+        text-align: center;
+        overflow: hidden;
+    }
+
+    .hero-modern::before {
+        content: "";
+        position: absolute;
+        width: 140%;
+        height: 140%;
+        top: -20%;
+        left: -20%;
+        background: url('https://cdn.jsdelivr.net/gh/creativetimofficial/public-assets/soft-ui-design/background.png');
+        opacity: 0.15;
+        background-size: cover;
+        animation: moveBg 18s infinite linear;
+    }
+
+    @keyframes moveBg {
+        0% { transform: translateY(0px); }
+        50% { transform: translateY(-35px); }
+        100% { transform: translateY(0px); }
+    }
+
+    .hero-btn {
+        padding: 14px 38px;
+        border-radius: 50px;
+        font-size: 1.2rem;
+        background: white;
+        color: #4f46e5 !important;
+        font-weight: bold;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        transition: 0.3s;
+    }
+
+    .hero-btn:hover {
+        transform: scale(1.08);
+        box-shadow: 0 15px 40px rgba(0,0,0,0.25);
+    }
+
+    /* ===========================
+       FEATURE CARD MODERN
+    ============================ */
+    .feature-card {
+        border: none;
+        border-radius: 22px;
+        backdrop-filter: blur(12px);
+        padding: 35px;
+        background: rgba(255,255,255,0.9);
+        box-shadow: 0 10px 40px rgba(0,0,0,0.05);
+        transition: all 0.4s ease;
+    }
+
+    .feature-card:hover {
+        transform: translateY(-12px) scale(1.03);
+        box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+    }
+
+    .feature-icon {
+        font-size: 58px;
+        color: #4f46e5;
+        margin-bottom: 20px;
+        transition: 0.4s;
+    }
+
+    .feature-card:hover .feature-icon {
+        transform: rotate(10deg) scale(1.2);
+    }
+
+    /* ===========================
+       CTA SECTION
+    ============================ */
+    .cta-modern {
+        padding: 90px 20px;
+        background: linear-gradient(135deg, #2563eb, #7c3aed);
+        color: white;
+        text-align: center;
+        border-radius: 0;
+        margin-top: 60px;
+        animation: fadeIn 1.5s ease;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(40px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .cta-modern .btn {
+        padding: 14px 40px;
+        border-radius: 50px;
+        font-size: 1.2rem;
+        font-weight: bold;
+        background: white;
+        color: #3730a3 !important;
+        transition: 0.3s;
+    }
+
+    .cta-modern .btn:hover {
+        transform: scale(1.06);
+        box-shadow: 0 10px 35px rgba(255,255,255,0.3);
+    }
+
+</style>
+
+
+<!-- ===========================
+     HERO SECTION
+==============================-->
+<header class="hero-modern" data-aos="fade-up">
+    <div class="container position-relative">
+        <h1 class="display-4 fw-bold" data-aos="fade-up" data-aos-delay="200">
+            WhatsApp Gateway Modern & Otomatis
+        </h1>
+        <p class="lead mt-3" data-aos="fade-up" data-aos-delay="350">
+            Broadcast cepat, integrasi API instan, dan dashboard real-time.
+        </p>
+        <a href="/register" class="btn hero-btn mt-4" data-aos="zoom-in" data-aos-delay="500">
+            Mulai Gratis Sekarang
+        </a>
     </div>
 </header>
 
-<section class="features-section py-5">
+
+<!-- ===========================
+     FEATURES SECTION
+==============================-->
+<section class="py-5">
     <div class="container">
-        <div class="row text-center">
-            <div class="col-md-4 mb-4">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <h3 class="card-title">Pesan Massal</h3>
-                        <p class="card-text">Kirim pesan ke ribuan kontak secara bersamaan dengan sekali klik. Sempurna untuk kampanye pemasaran atau pemberitahuan penting.</p>
-                    </div>
+        <div class="text-center mb-5" data-aos="fade-down">
+            <h2 class="fw-bold">Fitur Unggulan Kami</h2>
+            <p class="text-muted">Didesain untuk bisnis modern yang butuh kecepatan dan stabilitas.</p>
+        </div>
+
+        <div class="row g-4">
+            
+            <div class="col-md-4">
+                <div class="feature-card text-center h-100" data-aos="fade-up" data-aos-delay="150">
+                    <i class="bx bxs-send feature-icon"></i>
+                    <h3 class="fw-bold">Broadcast Massal</h3>
+                    <p>Kirim ribuan pesan sekaligus, tanpa limit dan super cepat.</p>
                 </div>
             </div>
-            <div class="col-md-4 mb-4">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <h3 class="card-title">API Developer-Friendly</h3>
-                        <p class="card-text">Integrasikan fungsionalitas WhatsApp ke dalam sistem Anda dengan REST API kami yang mudah digunakan dan didokumentasikan dengan baik.</p>
-                    </div>
+
+            <div class="col-md-4">
+                <div class="feature-card text-center h-100" data-aos="fade-up" data-aos-delay="300">
+                    <i class="bx bx-code-alt feature-icon"></i>
+                    <h3 class="fw-bold">API Developer Friendly</h3>
+                    <p>Integrasi mudah dengan dokumentasi jelas & contoh lengkap.</p>
                 </div>
             </div>
-            <div class="col-md-4 mb-4">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <h3 class="card-title">Dokumentasi Lengkap</h3>
-                        <p class="card-text">Dapatkan semua informasi yang Anda butuhkan untuk memulai dengan cepat dari dokumentasi API kami yang komprehensif.</p>
-                        <a href="/api-docs" class="btn btn-outline-primary">Lihat Dokumentasi</a>
-                    </div>
+
+            <div class="col-md-4">
+                <div class="feature-card text-center h-100" data-aos="fade-up" data-aos-delay="450">
+                    <i class="bx bx-book-open feature-icon"></i>
+                    <h3 class="fw-bold">Dokumentasi Premium</h3>
+                    <p>Mulai cepat dengan panduan lengkap dari basic hingga advanced.</p>
+                    <a href="/api-docs" class="btn btn-outline-primary mt-2">Buka Dokumentasi</a>
                 </div>
             </div>
+
         </div>
     </div>
 </section>
+
+
+<!-- ===========================
+     CTA SECTION
+==============================-->
+<section class="cta-modern" data-aos="zoom-in">
+    <div class="container">
+        <h2 class="fw-bold">Siap Mengembangkan Bisnis Anda?</h2>
+        <p class="mt-2">Daftar sekarang dan nikmati WhatsApp Gateway tercepat dengan fitur modern.</p>
+        <a href="/register" class="btn mt-3">Buat Akun Sekarang</a>
+    </div>
+</section>
+
+<script>
+    AOS.init({
+        duration: 1100,
+        once: true,
+    });
+</script>
 
 <%- include('partials/landing_footer') %>
