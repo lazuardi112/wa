@@ -12,16 +12,13 @@ const generateApiKey = async (req, res) => {
         // Invalidate any old API key by deleting it
         await db.ApiKey.destroy({ where: { userId } });
 
-        // Generate the raw API key to show to the user
+        // Generate the raw API key to show to the user and store in the database
         const rawApiKey = crypto.randomBytes(32).toString('hex');
 
-        // Create a SHA256 hash of the key for database storage
-        const hashedKey = crypto.createHash('sha256').update(rawApiKey).digest('hex');
-
-        // Store the hashed key in the database
+        // Store the raw key directly in the database
         await db.ApiKey.create({
             userId,
-            key: hashedKey // Store the hash
+            key: rawApiKey // Store the raw key
         });
 
         // Store the raw key in the session to be displayed ONCE.
