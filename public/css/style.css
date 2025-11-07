@@ -214,14 +214,46 @@ body.dark-theme {
 }
 
 /* Responsive */
+.mobile-header {
+  display: none; /* Hidden on desktop */
+  background-color: var(--white-color);
+  padding: 10px 15px;
+  box-shadow: 0 2px 4px var(--shadow-color);
+  position: sticky;
+  top: 0;
+  z-index: 99;
+}
+
+.menu-toggle {
+  background: none;
+  border: none;
+  font-size: 28px;
+  cursor: pointer;
+}
+
+.mobile-brand {
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
 @media (max-width: 768px) {
   .main-content {
     margin-left: 0;
     width: 100%;
+    padding-top: 70px; /* Space for fixed mobile header */
+  }
+
+  .mobile-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
   }
 
   .sidebar {
+    position: fixed;
     transform: translateX(-100%);
+    z-index: 1000;
+    transition: transform 0.3s ease-in-out;
   }
 
   .sidebar.show {

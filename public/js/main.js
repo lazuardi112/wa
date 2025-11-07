@@ -29,6 +29,17 @@ document.addEventListener('DOMContentLoaded', () => {
     document.body.classList.add('dark-theme');
   }
 
+  // --- Mobile Sidebar Logic ---
+  const menuToggle = document.getElementById('menu-toggle');
+  const sidebar = document.getElementById('sidebar');
+
+  if (menuToggle && sidebar) {
+    menuToggle.addEventListener('click', () => {
+      console.log('Menu toggle clicked!');
+      sidebar.classList.toggle('show');
+    });
+  }
+
   // --- Devices Page Logic ---
   if (document.getElementById('device-list')) {
     const modal = document.getElementById('add-device-modal');
