@@ -38,6 +38,15 @@ const userAuth = async (req, res, next) => {
             return res.status(500).send('Critical Error: Default package not found.');
         }
 
+        // Ensure essential properties have default values to prevent crashes
+        // This acts as a safeguard if DB migrations are out of sync with the model
+        if (user.messageCount === undefined) {
+            user.messageCount = 0;
+        }
+        if (user.messageLimit === undefined) {
+            user.messageLimit = 50; // A sensible default
+        }
+
         // Attach the fresh user and package objects to the request
         req.user = user;
         req.package = currentPackage;
