@@ -36,25 +36,23 @@ const processMessage = async (sock, msg, instanceId, deviceId) => {
         if (!device) return;
 
         const user = await db.User.findByPk(device.userId);
-        if (!user) return;
-
-        let subscription = await db.Transaction.findOne({
-            where: { userId: user.id, status: 'success' },
-            order: [['expiresAt', 'DESC']],
-            include: ['package']
-        });
-
-        if (!subscription || new Date() > new Date(subscription.expiresAt)) {
-            const freePackage = await db.Package.findOne({ where: { name: 'Free' } });
-            subscription = { package: freePackage };
+        if (!user || user.isBlocked) {
+            console.log(`[BotService] User not found or is blocked. Aborting.`);
+            return;
         }
-        const userPackage = subscription.package;
 
+        // --- Simplified Message Limit Check ---
+        // The user object from `findByPk` has the correct `messageLimit` and `messageCount`
+        // updated by the webhook and middleware. We trust this data directly.
         const today = new Date().setHours(0, 0, 0, 0);
         const lastReset = user.lastResetDate ? new Date(user.lastResetDate).setHours(0, 0, 0, 0) : null;
 
-        if (lastReset === today && user.messageCount >= userPackage.messageLimit) {
-            console.log(`[BotService] User ${user.email} has reached their message limit. Bot response not sent.`);
+        // Ensure defaults if fields are missing (safeguard for db sync issues)
+        const messageCount = user.messageCount || 0;
+        const messageLimit = user.messageLimit || 50;
+
+        if (lastReset === today && messageCount >= messageLimit) {
+            console.log(`[BotService] User ${user.email} has reached their daily limit of ${messageLimit}. Bot response not sent.`);
             return;
         }
 
