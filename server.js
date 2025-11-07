@@ -26,6 +26,10 @@ try {
     const server = http.createServer(app);
     console.log("   Express app initialized.");
 
+    // --- PUBLIC WEBHOOK (Must be before express.json()) ---
+    const paymentController = require('./controllers/paymentController');
+    app.post('/notif/midtrans', paymentController.handleMidtransNotification);
+
     // --- 3. View Engine Configuration (EJS) ---
     console.log("3. Configuring view engine...");
     app.set('view engine', 'ejs');

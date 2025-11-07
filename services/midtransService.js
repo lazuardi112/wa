@@ -136,7 +136,8 @@ async function updateTransactionAndUser(transaction, status) {
     const user = transaction.user;
     user.packageId = transaction.packageId;
     user.packageExpiresAt = expiresAt;
-    user.messageCount = 0;
+    user.messageCount = 0; // Reset message count on new subscription
+    user.messageLimit = transaction.package.messageLimit; // Update to new package's limit
     user.lastResetDate = new Date();
 
     await user.save();
