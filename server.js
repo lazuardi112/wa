@@ -72,6 +72,7 @@ try {
     app.use('/admin', require('./routes/adminViewRoutes'));
 
     // --- Main User View Routes ---
+    const viewController = require('./controllers/viewController');
 
     // Public routes must be defined BEFORE protected routes
     app.get('/login', redirectIfLoggedIn, (req, res) => res.render('login', { query: req.query || {} }));
@@ -81,19 +82,18 @@ try {
         res.render('verify-otp', { query: req.query || {}, userId: req.query.userId });
     });
     app.get('/', (req, res) => {
-        // If the user is logged in, redirect to dashboard. Otherwise, to login.
+        // If the user is logged in, redirect to dashboard. Otherwise, show landing page.
         if (req.session.user) {
             return res.redirect('/dashboard');
         }
-        res.redirect('/login');
+        viewController.renderLandingPage(req, res);
     });
 
     // Create a separate router for protected view routes
     const protectedViews = express.Router();
     protectedViews.use(protectView, userAuth); // Apply protection to this entire router
 
-    // Import controllers
-    const viewController = require('./controllers/viewController');
+    // Assign protected routes to the protected router
 
     // Assign protected routes to the protected router
     protectedViews.get('/dashboard', viewController.renderDashboard);

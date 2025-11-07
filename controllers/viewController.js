@@ -181,6 +181,17 @@ const renderHistoryPage = async (req, res) => {
     }
 };
 
+// @desc    Render the main public landing page
+const renderLandingPage = (req, res) => {
+    try {
+        // This page is public, so it doesn't have user data
+        res.render('landing');
+    } catch (error) {
+        console.error('Landing Page Error:', error);
+        res.status(500).send('Error loading page.');
+    }
+};
+
 module.exports = {
     renderDashboard,
     renderDevicesPage,
@@ -190,4 +201,5 @@ module.exports = {
     renderSubscribePage,
     renderEditBotPage,
     renderHistoryPage,
+    renderLandingPage,
 };

@@ -1,0 +1,22 @@
+body {
+    padding-top: 56px; /* Adjust body padding to account for the fixed navbar */
+}
+
+.hero-section {
+    background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('https://source.unsplash.com/1600x900/?whatsapp,technology') no-repeat center center;
+    background-size: cover;
+    padding: 100px 0;
+}
+
+.features-section {
+    background-color: #f8f9fa;
+}
+
+.card {
+    border: none;
+    transition: transform 0.3s;
+}
+
+.card:hover {
+    transform: translateY(-10px);
+}
