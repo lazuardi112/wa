@@ -47,9 +47,74 @@
     <button class="tab-button" data-tab="text-js">JavaScript</button>
   </div>
 
-  <div id="text-curl" class="tab-content active"><pre>...</pre></div>
-  <div id="text-php" class="tab-content"><pre>...</pre></div>
-  <div id="text-js" class="tab-content"><pre>...</pre></div>
+  <div id="text-curl" class="tab-content active">
+<pre><code>
+curl -X POST 'https://xcd.xcreate.my.id/api/v1/message/send-text' \
+--header 'x-api-key: KUNCI_API_ANDA' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "number": "6281234567890",
+    "message": "Halo dari Wapi XCD!"
+}'
+</code></pre>
+  </div>
+  <div id="text-php" class="tab-content">
+<pre><code>
+&lt;?php
+$curl = curl_init();
+
+curl_setopt_array($curl, array(
+  CURLOPT_URL => 'https://xcd.xcreate.my.id/api/v1/message/send-text',
+  CURLOPT_RETURNTRANSFER => true,
+  CURLOPT_ENCODING => '',
+  CURLOPT_MAXREDIRS => 10,
+  CURLOPT_TIMEOUT => 0,
+  CURLOPT_FOLLOWLOCATION => true,
+  CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+  CURLOPT_CUSTOMREQUEST => 'POST',
+  CURLOPT_POSTFIELDS => json_encode(array(
+    'number' => '6281234567890',
+    'message' => 'Halo dari Wapi XCD!'
+  )),
+  CURLOPT_HTTPHEADER => array(
+    'x-api-key: KUNCI_API_ANDA',
+    'Content-Type: application/json'
+  ),
+));
+
+$response = curl_exec($curl);
+curl_close($curl);
+echo $response;
+?&gt;
+</code></pre>
+  </div>
+  <div id="text-js" class="tab-content">
+<pre><code>
+const axios = require('axios');
+const data = JSON.stringify({
+  "number": "6281234567890",
+  "message": "Halo dari Wapi XCD!"
+});
+
+const config = {
+  method: 'post',
+  url: 'https://xcd.xcreate.my.id/api/v1/message/send-text',
+  headers: {
+    'x-api-key': 'KUNCI_API_ANDA',
+    'Content-Type': 'application/json'
+  },
+  data : data
+};
+
+axios(config)
+.then(function (response) {
+  console.log(JSON.stringify(response.data));
+})
+.catch(function (error) {
+  console.log(error);
+});
+</code></pre>
+  </div>
 </div>
 
 <!-- Send Media -->
@@ -64,9 +129,74 @@
     <button class="tab-button" data-tab="media-js">JavaScript</button>
   </div>
 
-  <div id="media-curl" class="tab-content active"><pre>...</pre></div>
-  <div id="media-php" class="tab-content"><pre>...</pre></div>
-  <div id="media-js" class="tab-content"><pre>...</pre></div>
+  <div id="media-curl" class="tab-content active">
+<pre><code>
+curl --location --request POST 'https://xcd.xcreate.my.id/api/v1/message/send-image' \
+--header 'x-api-key: KUNCI_API_ANDA' \
+--form 'number="6281234567890"' \
+--form 'caption="Ini adalah caption gambar."' \
+--form 'file=@"/path/to/your/image.jpg"'
+</code></pre>
+  </div>
+  <div id="media-php" class="tab-content">
+<pre><code>
+&lt;?php
+$curl = curl_init();
+
+curl_setopt_array($curl, array(
+  CURLOPT_URL => 'https://xcd.xcreate.my.id/api/v1/message/send-image',
+  CURLOPT_RETURNTRANSFER => true,
+  CURLOPT_ENCODING => '',
+  CURLOPT_MAXREDIRS => 10,
+  CURLOPT_TIMEOUT => 0,
+  CURLOPT_FOLLOWLOCATION => true,
+  CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+  CURLOPT_CUSTOMREQUEST => 'POST',
+  CURLOPT_POSTFIELDS => array(
+    'number' => '6281234567890',
+    'caption' => 'Ini adalah caption gambar.',
+    'file'=> new CURLFILE('/path/to/your/image.jpg')
+  ),
+  CURLOPT_HTTPHEADER => array(
+    'x-api-key: KUNCI_API_ANDA'
+  ),
+));
+
+$response = curl_exec($curl);
+curl_close($curl);
+echo $response;
+?&gt;
+</code></pre>
+  </div>
+  <div id="media-js" class="tab-content">
+<pre><code>
+const axios = require('axios');
+const FormData = require('form-data');
+const fs = require('fs');
+const data = new FormData();
+data.append('number', '6281234567890');
+data.append('caption', 'Ini adalah caption gambar.');
+data.append('file', fs.createReadStream('/path/to/your/image.jpg'));
+
+const config = {
+  method: 'post',
+  url: 'https://xcd.xcreate.my.id/api/v1/message/send-image',
+  headers: {
+    'x-api-key': 'KUNCI_API_ANDA',
+    ...data.getHeaders()
+  },
+  data : data
+};
+
+axios(config)
+.then(function (response) {
+  console.log(JSON.stringify(response.data));
+})
+.catch(function (error) {
+  console.log(error);
+});
+</code></pre>
+  </div>
 </div>
 
 <%- include('partials/footer') %>

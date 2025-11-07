@@ -1,15 +1,41 @@
-<%- include('partials/header', { title: 'Perangkat', active: 'devices' }) %>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Perangkat | Wapi XCD</title>
 
+  <!-- Fonts and Icons -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap">
+  <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
+
+  <!-- Main Stylesheet -->
+  <link rel="stylesheet" href="public/css/style.css" />
+
+  <style>
+    /* Basic layout styles to avoid FOUC */
+    body {
+      display: flex;
+      background-color: #f0f2f5;
+    }
+    .main-content {
+      flex-grow: 1;
+      transition: margin-left 0.3s ease;
+    }
+  </style>
+
+  <!-- SweetAlert2 for beautiful popups -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+</head>
+<body>
+
+  <div class="main-content">
+
+    <div class="container fade-in">
 <div class="header">
   <h1>Kelola Perangkat Anda</h1>
-  <% if (canAddDevice) { %>
     <button id="open-modal-btn" class="btn">Tambah Perangkat Baru</button>
-  <% } else { %>
-    <div class="limit-info">
-      <p>Anda telah mencapai batas perangkat Anda (<%= limit %>).</p>
-      <a href="/subscribe" class="btn">Tingkatkan Paket</a>
-    </div>
-  <% } %>
 </div>
 
 <div class="table-container">
@@ -23,25 +49,9 @@
       </tr>
     </thead>
     <tbody id="device-list">
-      <% if (!devices || devices.length === 0) { %>
         <tr>
           <td colspan="4" class="text-center">Anda belum memiliki perangkat.</td>
         </tr>
-      <% } else { %>
-        <% devices.forEach(device => { %>
-          <tr data-device-id="<%= device.id %>" data-instance-id="<%= device.instanceId %>">
-            <td><%= device.remark %></td>
-            <td><%= device.instanceId %></td>
-            <td><span class="status status-<%= device.status.toLowerCase() %>"><%= device.status %></span></td>
-            <td>
-              <% if (device.status.toLowerCase() !== 'connected') { %>
-                <button class="btn btn-sm reconnect-btn" data-device-id="<%= device.id %>" data-instance-id="<%= device.instanceId %>">Hubungkan</button>
-              <% } %>
-              <button class="btn btn-sm btn-danger delete-btn" data-device-id="<%= device.id %>">Hapus</button>
-            </td>
-          </tr>
-        <% }); %>
-      <% } %>
     </tbody>
   </table>
 </div>
@@ -66,5 +76,9 @@
   </div>
 </div>
 
-<script src="/socket.io/socket.io.js"></script>
-<%- include('partials/footer') %>
+</div>
+  </div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="public/js/main.js"></script>
+</body>
+</html>

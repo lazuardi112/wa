@@ -114,14 +114,26 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     if (openModalBtn) {
-      openModalBtn.onclick = openModal;
+      openModalBtn.addEventListener('click', openModal);
     }
-    closeModalBtn.onclick = closeModal;
-    window.onclick = (event) => {
+    closeModalBtn.addEventListener('click', closeModal);
+    window.addEventListener('click', (event) => {
         if (event.target == modal) {
             closeModal();
         }
-    };
+    });
+
+    document.getElementById('device-list').addEventListener('click', (event) => {
+      if (event.target.classList.contains('reconnect-btn')) {
+        const deviceId = event.target.dataset.deviceId;
+        const instanceId = event.target.dataset.instanceId;
+        handleReconnect(deviceId, instanceId);
+      }
+      if (event.target.classList.contains('delete-btn')) {
+        const deviceId = event.target.dataset.deviceId;
+        deleteDevice(deviceId);
+      }
+    });
 
     generateQrBtn.addEventListener('click', async () => {
         const deviceName = deviceNameInput.value.trim();
