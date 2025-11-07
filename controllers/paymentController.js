@@ -50,15 +50,23 @@ const createSubscription = async (req, res) => {
 };
 
 // @desc    Handle Midtrans payment notification webhook
-// @route   POST /api/v1/payment/notify
+// @route   POST /notif/midtrans
 // @access  Public (from Midtrans)
 const handleMidtransNotification = async (req, res) => {
     try {
+        // Log the raw body to ensure it's being received
+        console.log('[Midtrans Webhook] Received notification:', JSON.stringify(req.body, null, 2));
+
+        if (!req.body || Object.keys(req.body).length === 0) {
+            console.error('[Midtrans Webhook] Error: Received an empty request body. Ensure express.json() is used before this route.');
+            return res.status(400).send('Error: Empty request body.');
+        }
+
         await handleNotification(req.body);
-        res.status(200).send('Notification received.');
+        res.status(200).send({ status: 'success', message: 'Notification received.' });
     } catch (error) {
-        console.error("Webhook Error:", error);
-        res.status(500).send('Error processing notification.');
+        console.error("[Midtrans Webhook] Unhandled error processing notification:", error);
+        res.status(500).send({ status: 'error', message: 'Error processing notification.' });
     }
 };
 
