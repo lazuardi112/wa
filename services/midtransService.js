@@ -78,38 +78,70 @@ const createTransaction = async (userId, orderId, amount) => {
  * Handle incoming Midtrans notifications.
  */
 const handleNotification = async (notification) => {
-    // We need a CoreApi instance to validate the notification signature
     const config = await getMidtransConfig();
     const coreApi = new midtransClient.CoreApi({
         isProduction: config.isProduction,
         serverKey: config.serverKey,
-        clientKey: '' // Client key is not needed for server-side validation
+        clientKey: '' // Not needed for server-side validation
     });
 
-    // Use Core API to verify notification for better security
+    // Verify the notification signature for security
     const statusResponse = await coreApi.transaction.notification(notification);
-    const orderId = statusResponse.order_id;
-    const transactionStatus = statusResponse.transaction_status;
-    const fraudStatus = statusResponse.fraud_status;
+    const {
+        order_id: orderId,
+        transaction_status: transactionStatus,
+        fraud_status: fraudStatus,
+    } = statusResponse;
 
-    console.log(`Received notification for orderId ${orderId}: transactionStatus ${transactionStatus}, fraudStatus ${fraudStatus}`);
+    console.log(
+        `[Midtrans] Notification for Order ID ${orderId}: ` +
+        `Transaction status: ${transactionStatus}, Fraud status: ${fraudStatus}`
+    );
 
     const transaction = await db.Transaction.findOne({
         where: { orderId },
-        include: ['package', 'user']
+        include: ['package', 'user'],
     });
 
     if (!transaction) {
-        console.warn(`Webhook ignored: Transaction with orderId ${orderId} not found.`);
-        return;
+        console.warn(`[Midtrans] Webhook ignored: Transaction with Order ID ${orderId} not found.`);
+        return; // Stop processing if the transaction doesn't exist
     }
 
-    if (transactionStatus == 'capture' || transactionStatus == 'settlement') {
-        if (fraudStatus == 'accept') {
-            await updateTransactionAndUser(transaction, 'success');
-        }
-    } else if (transactionStatus == 'cancel' || transactionStatus == 'expire' || transactionStatus == 'deny') {
-        await transaction.update({ status: 'failed' });
+    // Always update with the latest gateway data for logging purposes
+    transaction.paymentGatewayData = statusResponse;
+
+    // Use a switch statement for clarity
+    switch (transactionStatus) {
+        case 'capture':
+        case 'settlement':
+            if (fraudStatus === 'accept') {
+                console.log(`[Midtrans] Payment for Order ID ${orderId} successful.`);
+                await updateTransactionAndUser(transaction, 'success');
+            } else {
+                console.warn(`[Midtrans] Payment for Order ID ${orderId} was successful but flagged for fraud (${fraudStatus}).`);
+                transaction.status = 'failed'; // Or a new status like 'review'
+                await transaction.save();
+            }
+            break;
+
+        case 'pending':
+            console.log(`[Midtrans] Payment for Order ID ${orderId} is pending.`);
+            transaction.status = 'pending';
+            await transaction.save();
+            break;
+
+        case 'deny':
+        case 'expire':
+        case 'cancel':
+            console.log(`[Midtrans] Payment for Order ID ${orderId} failed with status: ${transactionStatus}.`);
+            transaction.status = 'failed';
+            await transaction.save();
+            break;
+
+        default:
+            console.warn(`[Midtrans] Unhandled transaction status: ${transactionStatus}`);
+            break;
     }
 };
 
