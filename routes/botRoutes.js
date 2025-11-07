@@ -1,28 +1,30 @@
 const express = require('express');
 const router = express.Router();
 const {
-    createBotFlow,
-    toggleBotFlow,
-    deleteBotFlow,
-    updateBotFlow,
-    // getBotFlows and updateBotFlow will be handled by viewController for page rendering
+    createBot,
+    deleteBot,
+    createTrigger,
+    deleteTrigger,
+    createAction,
+    deleteAction
 } = require('../controllers/botController');
-const { protect } = require('../middleware/authMiddleware');
+const { protectView, protect } = require('../middleware/authMiddleware');
 const { userAuth } = require('../middleware/userAuth');
 
-// Protect all bot routes
+// All routes in this file are for POST actions and should be protected.
+// The GET route for the bot page is in viewRoutes.js and adminViewRoutes.js.
 router.use(protect, userAuth);
 
-// Route to create a new bot flow
-router.post('/create', createBotFlow);
+// Bot routes
+router.post('/create', createBot);
+router.post('/delete/:id', deleteBot);
 
-// Route to toggle the isEnabled status of a bot flow
-router.post('/toggle/:id', toggleBotFlow);
+// Trigger routes
+router.post('/trigger/create', createTrigger);
+router.post('/trigger/delete/:id', deleteTrigger);
 
-// Route to delete a bot flow
-router.post('/delete/:id', deleteBotFlow);
-
-// Route to update a bot flow
-router.post('/update/:id', updateBotFlow);
+// Action routes
+router.post('/action/create', createAction);
+router.post('/action/delete/:id', deleteAction);
 
 module.exports = router;
