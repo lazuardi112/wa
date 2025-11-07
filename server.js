@@ -34,6 +34,9 @@ try {
 
     // --- 4. Core Middleware ---
     console.log("4. Applying middleware...");
+    // Serve static files (CSS, JS, images) from the 'public' directory
+    app.use(express.static(path.join(__dirname, 'public')));
+
     app.use(express.json()); // <-- IMPORTANT: This must come BEFORE the webhook route
 
     // --- PUBLIC WEBHOOK ---
@@ -75,11 +78,11 @@ try {
     const viewController = require('./controllers/viewController');
 
     // Public routes must be defined BEFORE protected routes
-    app.get('/login', redirectIfLoggedIn, (req, res) => res.render('login', { query: req.query || {} }));
-    app.get('/register', redirectIfLoggedIn, (req, res) => res.render('register', { query: req.query || {} }));
+    app.get('/login', redirectIfLoggedIn, (req, res) => res.render('login', { query: req.query || {}, error: null }));
+    app.get('/register', redirectIfLoggedIn, (req, res) => res.render('register', { query: req.query || {}, error: null }));
     app.get('/verify-otp', redirectIfLoggedIn, (req, res) => {
         if (!req.query.userId) return res.redirect('/register');
-        res.render('verify-otp', { query: req.query || {}, userId: req.query.userId });
+        res.render('verify-otp', { query: req.query || {}, userId: req.query.userId, error: null });
     });
     app.get('/', (req, res) => {
         // If the user is logged in, redirect to dashboard. Otherwise, show landing page.
