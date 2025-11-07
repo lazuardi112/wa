@@ -35,6 +35,7 @@ async function connectToWhatsApp(instanceId, deviceId) {
         const { connection, lastDisconnect, qr } = update;
 
         if (qr) {
+            console.log(`[${instanceId}] QR string received.`);
             try {
                 const qrCodeDataUrl = await qrcode.toDataURL(qr);
                 io.to(instanceId).emit('qr_code', qrCodeDataUrl);
@@ -42,6 +43,7 @@ async function connectToWhatsApp(instanceId, deviceId) {
                 await db.Device.update({ status: 'waiting_qr' }, { where: { id: deviceId } });
             } catch (err) {
                 console.error(`[${instanceId}] Failed to generate QR code data URL:`, err);
+                io.to(instanceId).emit('status_update', { status: 'ERROR', message: 'Failed to generate QR code.', instanceId });
             }
         }
 
