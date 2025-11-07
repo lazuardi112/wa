@@ -8,13 +8,13 @@
   </div>
 
   <nav class="nav">
-    <a href="/dashboard" class="<%= active === 'dashboard' ? 'active' : '' %>"><i class='bx bxs-dashboard'></i><span class="text">Dasbor</span></a>
-    <a href="/devices" class="<%= active === 'devices' ? 'active' : '' %>"><i class='bx bxs-devices'></i><span class="text">Perangkat</span></a>
-    <a href="/messaging" class="<%= active === 'messaging' ? 'active' : '' %>"><i class='bx bxs-send'></i><span class="text">Kirim Pesan</span></a>
-    <a href="/bot" class="<%= active === 'bot' ? 'active' : '' %>"><i class='bx bx-bot'></i> <span class="text">Bot WhatsApp</span></a>
-    <a href="/api-docs" class="<%= active === 'api-docs' ? 'active' : '' %>"><i class='bx bxs-book'></i><span class="text">Dokumentasi API</span></a>
-    <a href="/subscribe" class="<%= active === 'subscribe' ? 'active' : '' %>"><i class='bx bxs-star'></i><span class="text">Langganan</span></a>
-    <a href="/history" class="<%= active === 'history' ? 'active' : '' %>"><i class='bx bx-history'></i><span class="text">Riwayat</span></a>
+    <a href="/dashboard" class="<%= (typeof active !== 'undefined' && active === 'dashboard') ? 'active' : '' %>"><i class='bx bxs-dashboard'></i><span class="text">Dasbor</span></a>
+    <a href="/devices" class="<%= (typeof active !== 'undefined' && active === 'devices') ? 'active' : '' %>"><i class='bx bxs-devices'></i><span class="text">Perangkat</span></a>
+    <a href="/messaging" class="<%= (typeof active !== 'undefined' && active === 'messaging') ? 'active' : '' %>"><i class='bx bxs-send'></i><span class="text">Kirim Pesan</span></a>
+    <a href="/bot" class="<%= (typeof active !== 'undefined' && active === 'bot') ? 'active' : '' %>"><i class='bx bx-bot'></i> <span class="text">Bot WhatsApp</span></a>
+    <a href="/api-docs" class="<%= (typeof active !== 'undefined' && active === 'api-docs') ? 'active' : '' %>"><i class='bx bxs-book'></i><span class="text">Dokumentasi API</span></a>
+    <a href="/subscribe" class="<%= (typeof active !== 'undefined' && active === 'subscribe') ? 'active' : '' %>"><i class='bx bxs-star'></i><span class="text">Langganan</span></a>
+    <a href="/history" class="<%= (typeof active !== 'undefined' && active === 'history') ? 'active' : '' %>"><i class='bx bx-history'></i><span class="text">Riwayat</span></a>
     <a href="/logout"><i class='bx bxs-log-out'></i><span class="text">Keluar</span></a>
   </nav>
 
