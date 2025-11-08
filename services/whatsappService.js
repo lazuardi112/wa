@@ -22,13 +22,17 @@ async function connectToWhatsApp(instanceId, deviceId) {
     try {
         const sessionPath = path.join(__dirname, '..', 'sessions', instanceId);
         const { state, saveCreds } = await useMultiFileAuthState(sessionPath);
+        const { version, isLatest } = await fetchLatestBaileysVersion();
+        console.log(`[${instanceId}] Using WA v${version.join('.')}, isLatest: ${isLatest}`);
 
         const logger = pino({ level: "debug" });
 
         const sock = makeWASocket({
             auth: state,
             printQRInTerminal: false,
-            logger
+            logger,
+            browser: Browsers.linux('Chrome'),
+            version
         });
 
         sessions.set(instanceId, { sock, deviceId });
