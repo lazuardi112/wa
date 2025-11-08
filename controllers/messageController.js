@@ -170,13 +170,8 @@ const sendApiMessage = async (req, res) => {
             });
         }
 
-        // Ensure deviceId is treated as an integer for the query
-        const parsedDeviceId = parseInt(deviceId, 10);
-        if (isNaN(parsedDeviceId)) {
-            return res.status(400).json({ success: false, message: 'Invalid Device ID format.' });
-        }
-
-        const device = await db.Device.findOne({ where: { id: parsedDeviceId, userId: user.id } });
+        // Find the device by its instanceId and ensure it belongs to the authenticated user
+        const device = await db.Device.findOne({ where: { instanceId: deviceId, userId: user.id } });
         if (!device) {
             return res.status(403).json({ success: false, message: 'Forbidden: You do not own this device.' });
         }
