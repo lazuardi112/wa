@@ -48,20 +48,24 @@ async function connectToWhatsApp(instanceId, deviceId) {
         }
 
         if (connection === 'close') {
-            const statusCode = (lastDisconnect.error instanceof Boom)?.output?.statusCode;
-            console.log(`[${instanceId}] Connection closed due to statusCode ${statusCode}`);
+            const error = lastDisconnect?.error;
+            const statusCode = (error instanceof Boom) ? error.output.statusCode : 0; // Default to 0 if not a Boom error
+
+            console.log(`[${instanceId}] Connection closed.`, `Status Code: ${statusCode}`, `Error: ${error}`);
 
             await db.Device.update({ status: 'disconnected' }, { where: { id: deviceId } });
             io.to(instanceId).emit('status_update', { status: 'DISCONNECTED', message: 'Device disconnected.', instanceId });
 
-            // Logika rekoneksi yang disempurnakan
-            if (statusCode === DisconnectReason.loggedOut) {
-                console.log(`[${instanceId}] Device Logged Out, please re-scan.`);
-                deleteSession(instanceId, true); // Hapus sesi sepenuhnya
-            } else {
-                // Untuk semua error lain (termasuk restartRequired), coba sambungkan kembali
-                console.log(`[${instanceId}] Reconnecting...`);
+            // Reconnection logic that prevents loops.
+            // Only reconnect automatically if the error is explicitly 'restartRequired'.
+            if (statusCode === DisconnectReason.restartRequired) {
+                console.log(`[${instanceId}] Reconnecting: Restart is required.`);
                 connectToWhatsApp(instanceId, deviceId);
+            } else if (statusCode === DisconnectReason.loggedOut) {
+                console.log(`[${instanceId}] Not Reconnecting: Device was logged out.`);
+                deleteSession(instanceId, true);
+            } else {
+                console.log(`[${instanceId}] Not Reconnecting: Automatic reconnection is disabled for this type of disconnect to prevent loops. Status code: ${statusCode}`);
             }
 
         } else if (connection === 'open') {
