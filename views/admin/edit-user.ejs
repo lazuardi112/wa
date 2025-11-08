@@ -1,13 +1,38 @@
-<%- include('../partials/admin_header', { title: 'Edit Pengguna', active: 'users' }) %>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit User</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #121212; color: white; margin: 0; }
+        .sidebar { position: fixed; width: 250px; height: 100%; background: #1e1e1e; padding: 1rem; }
+        .sidebar h2 { text-align: center; color: #007bff; }
+        .sidebar a { display: block; color: white; padding: 1rem; text-decoration: none; border-radius: 4px; }
+        .sidebar a:hover { background: #333; }
+        .main-content { margin-left: 270px; padding: 2rem; }
+        h1 { color: #007bff; }
+        .card { background: #1e1e1e; padding: 1.5rem; border-radius: 8px; }
+        .form-group { margin-bottom: 1rem; }
+        label { display: block; margin-bottom: 0.5rem; }
+        input, select, .form-control { width: 100%; max-width: 600px; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2c2c2c; color: white; box-sizing: border-box; }
+        .btn { padding: 0.75rem 1.5rem; border: none; border-radius: 4px; color: white; text-decoration: none; cursor: pointer; display: inline-block; }
+        .btn-primary { background-color: #007bff; }
+        .btn-secondary { background-color: #6c757d; }
+        .mt-3 { margin-top: 1rem; }
+    </style>
+</head>
+<body>
+    <%- include('sidebar') %>
+    <div class="main-content">
+        <h1>Edit Pengguna</h1>
 
-<div class="header">
-    <h1>Edit Pengguna</h1>
-</div>
+        <% if (query && query.error) { %>
+            <div style="padding: 1rem; margin-bottom: 1rem; border-radius: 4px; background-color: #dc3545;"><%= query.error %></div>
+        <% } %>
 
-<div class="container-fluid">
-    <div class="card">
-        <div class="card-body">
-            <form action="/admin/users/edit/<%= userToEdit.id %>" method="POST">
+        <div class="card">
+            <form action="/api/v1/admin/users/edit/<%= userToEdit.id %>" method="POST">
                 <div class="form-group">
                     <label for="email">Email</label>
                     <input type="email" class="form-control" id="email" name="email" value="<%= userToEdit.email %>" required>
@@ -28,24 +53,20 @@
                     <label for="packageId">Paket</label>
                     <select class="form-control" id="packageId" name="packageId">
                         <% packages.forEach(pkg => { %>
-                            <option value="<%= pkg.id %>" <%= userToEdit.packageId === pkg.id ? 'selected' : '' %>>
+                            <option value="<%= pkg.id %>" <%= userToEdit.packageId == pkg.id ? 'selected' : '' %>>
                                 <%= pkg.name %>
                             </option>
                         <% }); %>
                     </select>
                 </div>
                 <div class="form-group">
-                  <label for="isBlocked">Blokir Pengguna</label>
-                  <select class="form-control" id="isBlocked" name="isBlocked">
-                      <option value="false" <%= !userToEdit.isBlocked ? 'selected' : '' %>>Tidak</option>
-                      <option value="true" <%= userToEdit.isBlocked ? 'selected' : '' %>>Ya</option>
-                  </select>
-              </div>
+                    <label>Blokir Pengguna</label>
+                    <input type="checkbox" name="isBlocked" <%= userToEdit.isBlocked ? 'checked' : '' %>>
+                </div>
                 <button type="submit" class="btn btn-primary mt-3">Simpan Perubahan</button>
                 <a href="/admin/users" class="btn btn-secondary mt-3">Batal</a>
             </form>
         </div>
     </div>
-</div>
-
-<%- include('../partials/admin_footer') %>
+</body>
+</html>
