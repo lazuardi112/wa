@@ -1,45 +1,72 @@
-<%- include('../partials/admin_header', { title: 'Manajemen Sesi', active: 'sessions' }) %>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Sessions</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #121212; color: white; margin: 0; }
+        .sidebar { position: fixed; width: 250px; height: 100%; background: #1e1e1e; padding: 1rem; }
+        .sidebar h2 { text-align: center; color: #007bff; }
+        .sidebar a { display: block; color: white; padding: 1rem; text-decoration: none; border-radius: 4px; }
+        .sidebar a:hover { background: #333; }
+        .main-content { margin-left: 270px; padding: 2rem; }
+        h1 { color: #007bff; }
+        .card { background: #1e1e1e; padding: 1.5rem; border-radius: 8px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; }
+        th, td { padding: 1rem; text-align: left; border-bottom: 1px solid #333; }
+        th { background-color: #2c2c2c; }
+        .btn { padding: 0.5rem 1rem; border: none; border-radius: 4px; color: white; text-decoration: none; cursor: pointer; }
+        .btn-sm { padding: 0.25rem 0.5rem; font-size: 0.875rem; }
+        .btn-danger { background-color: #dc3545; }
+        .alert { padding: 1rem; margin-bottom: 1rem; border-radius: 4px; }
+        .alert-success { background-color: #28a745; }
+        .alert-danger { background-color: #dc3545; }
+        .text-center { text-align: center; }
+    </style>
+</head>
+<body>
+    <%- include('sidebar') %>
+    <div class="main-content">
+        <h1>Manajemen Sesi</h1>
+        <p>Hapus file sesi untuk memaksa perangkat melakukan scan QR ulang.</p>
 
-<div class="header">
-    <h1>Manajemen Sesi</h1>
-    <p>Hapus file sesi untuk memaksa perangkat melakukan scan QR ulang.</p>
-</div>
+        <% if (query && query.success) { %>
+            <div class="alert alert-success"><%= query.success %></div>
+        <% } %>
+        <% if (query && query.error) { %>
+            <div class="alert alert-danger"><%= query.error %></div>
+        <% } %>
 
-<% if (query.success) { %>
-    <div class="alert alert-success"><%= query.success %></div>
-<% } %>
-<% if (query.error) { %>
-    <div class="alert alert-danger"><%= query.error %></div>
-<% } %>
-
-<div class="table-container">
-    <table>
-        <thead>
-            <tr>
-                <th>Nama File Sesi</th>
-                <th>Tindakan</th>
-            </tr>
-        </thead>
-        <tbody>
-            <% if (sessions && sessions.length > 0) { %>
-                <% sessions.forEach(session => { %>
+        <div class="card">
+            <table>
+                <thead>
                     <tr>
-                        <td><%= session %></td>
-                        <td>
-                            <form action="/admin/sessions/delete" method="POST" style="display: inline;" onsubmit="return confirm('Apakah Anda yakin ingin menghapus sesi ini?');">
-                                <input type="hidden" name="sessionFile" value="<%= session %>">
-                                <button type="submit" class="btn btn-sm btn-danger">Hapus</button>
-                            </form>
-                        </td>
+                        <th>Nama File Sesi</th>
+                        <th>Tindakan</th>
                     </tr>
-                <% }); %>
-            <% } else { %>
-                <tr>
-                    <td colspan="2" class="text-center">Tidak ada file sesi yang ditemukan.</td>
-                </tr>
-            <% } %>
-        </tbody>
-    </table>
-</div>
-
-<%- include('../partials/admin_footer') %>
+                </thead>
+                <tbody>
+                    <% if (sessions && sessions.length > 0) { %>
+                        <% sessions.forEach(session => { %>
+                            <tr>
+                                <td><%= session %></td>
+                                <td>
+                                    <form action="/api/v1/admin/sessions/delete" method="POST" style="display: inline;" onsubmit="return confirm('Apakah Anda yakin ingin menghapus sesi ini?');">
+                                        <input type="hidden" name="sessionFile" value="<%= session %>">
+                                        <button type="submit" class="btn btn-sm btn-danger">Hapus</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    <% } else { %>
+                        <tr>
+                            <td colspan="2" class="text-center">Tidak ada file sesi yang ditemukan.</td>
+                        </tr>
+                    <% } %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>
