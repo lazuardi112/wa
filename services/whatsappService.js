@@ -1,5 +1,6 @@
 const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, Browsers } = require('@whiskeysockets/baileys');
 const { Boom } = require('@hapi/boom');
+const fs = require('fs');
 const path = require('path');
 const pino = require('pino');
 const db = require('../models');
@@ -87,10 +88,20 @@ async function connectToWhatsApp(instanceId, deviceId) {
 
 // Fungsi yang dipanggil oleh controller untuk memulai sesi baru
 async function generateQRCode(instanceId, deviceId) {
-    if (sessions.has(instanceId)) {
-        console.log(`[${instanceId}] Session already exists.`);
-        return;
+    const sessionPath = path.join(__dirname, '..', 'sessions', instanceId);
+
+    // Hapus paksa direktori sesi yang ada untuk memastikan awal yang bersih
+    if (fs.existsSync(sessionPath)) {
+        console.log(`[${instanceId}] Removing existing session files...`);
+        fs.rmSync(sessionPath, { recursive: true, force: true });
     }
+
+    // Hapus instance sesi yang ada dari memori jika ada
+    if (sessions.has(instanceId)) {
+        console.log(`[${instanceId}] Deleting in-memory session...`);
+        deleteSession(instanceId, false); // Jangan panggil logout karena koneksi mungkin sudah mati
+    }
+
     console.log(`[${instanceId}] Creating new WhatsApp session...`);
     connectToWhatsApp(instanceId, deviceId);
 }
