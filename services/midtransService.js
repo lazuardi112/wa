@@ -6,11 +6,12 @@ const db = require('../models');
 const getMidtransConfig = async () => {
     try {
         const serverKeySetting = await db.Setting.findOne({ where: { key: 'midtransServerKey' } });
-        const isProductionSetting = await db.Setting.findOne({ where: { key: 'midtransIsProduction' } });
+        const envSetting = await db.Setting.findOne({ where: { key: 'midtransEnv' } });
         const notificationUrlSetting = await db.Setting.findOne({ where: { key: 'midtransNotificationUrl' } });
 
 
-        const isProduction = isProductionSetting ? (isProductionSetting.value === 'true' || isProductionSetting.value === 1) : false;
+        // Default to sandbox if the setting is not present or its value is not 'production'
+        const isProduction = envSetting ? envSetting.value === 'production' : false;
         const serverKey = serverKeySetting ? serverKeySetting.value : process.env.MIDTRANS_SERVER_KEY;
         const notificationUrl = notificationUrlSetting ? notificationUrlSetting.value : null;
 
@@ -40,7 +41,7 @@ const createTransaction = async (userId, orderId, amount) => {
     // Correctly set the API URL based on environment
     const baseUrl = config.isProduction
         ? 'https://api.midtrans.com'
-        : 'https://api.midtrans.com';
+        : 'https://api.sandbox.midtrans.com';
     const url = `${baseUrl}/v2/charge`;
 
     const headers = {
@@ -87,8 +88,20 @@ const handleNotification = async (notification) => {
         clientKey: '' // Not needed for server-side validation
     });
 
-    // Verify the notification signature for security
-    const statusResponse = await coreApi.transaction.notification(notification);
+    let statusResponse;
+    try {
+        // Verify the notification signature for security
+        console.log('[Midtrans Webhook] Verifying notification signature...');
+        statusResponse = await coreApi.transaction.notification(notification);
+        console.log('[Midtrans Webhook] Signature verification successful.');
+    } catch (error) {
+        console.error('[Midtrans Webhook] FATAL: Signature verification failed!', error);
+        // Re-throw the error, as this is a critical security failure.
+        // The controller will catch this and send a 500 response.
+        throw new Error(`Signature verification failed: ${error.message}`);
+    }
+
+
     const {
         order_id: orderId,
         transaction_status: transactionStatus,
