@@ -2,22 +2,6 @@ const db = require('../models');
 const fs = require('fs');
 const path = require('path');
 
-const midtransConfigFile = path.join(__dirname, '..', 'config', 'midtrans.json');
-
-// Helper to read midtrans env config
-const getMidtransEnv = () => {
-    try {
-        if (fs.existsSync(midtransConfigFile)) {
-            const data = fs.readFileSync(midtransConfigFile, 'utf8');
-            return JSON.parse(data);
-        }
-    } catch (error) {
-        console.error("Error reading midtrans config file:", error);
-    }
-    // Default to sandbox if file doesn't exist or is invalid
-    return { environment: 'sandbox' };
-};
-
 // @desc    Show Admin Login Page
 // @route   GET /admin/login
 // @access  Public
@@ -95,8 +79,10 @@ const showSettingsPage = async (req, res) => {
             return acc;
         }, {});
 
-        // Add midtrans env to settings
-        settings.midtransEnv = getMidtransEnv().environment;
+        // Set default if not in DB
+        if (!settings.midtransEnv) {
+            settings.midtransEnv = 'sandbox';
+        }
 
         res.render('admin/settings', {
             settings,
@@ -121,13 +107,11 @@ const saveSettings = async (req, res) => {
         await db.Setting.upsert({ key: 'midtransServerKey', value: midtransServerKey });
         await db.Setting.upsert({ key: 'midtransClientKey', value: midtransClientKey });
         await db.Setting.upsert({ key: 'midtransNotificationUrl', value: midtransNotificationUrl });
-
-        // Save file-based setting
-        const midtransConfig = { environment: midtransEnv === 'production' ? 'production' : 'sandbox' };
-        fs.writeFileSync(midtransConfigFile, JSON.stringify(midtransConfig, null, 2));
+        await db.Setting.upsert({ key: 'midtransEnv', value: midtransEnv }); // Save to DB
 
         res.redirect('/admin/settings?message=Midtrans settings saved successfully!');
     } catch (error) {
+        console.error("Save Settings Error:", error);
         res.status(500).send("Error saving settings");
     }
 };
@@ -195,6 +179,110 @@ const showTransactionsPage = async (req, res) => {
     }
 };
 
+// @desc    Render Session Management Page
+// @route   GET /admin/sessions
+// @access  Private (Admin)
+const renderSessionsPage = (req, res) => {
+    const sessionsDir = path.join(__dirname, '..', 'sessions');
+    try {
+        const sessionFiles = fs.readdirSync(sessionsDir);
+        res.render('admin/sessions', { sessions: sessionFiles, query: req.query || {} });
+    } catch (error) {
+        console.error("Error reading sessions directory:", error);
+        res.render('admin/sessions', { sessions: [], query: { error: 'Gagal membaca direktori sesi.' } });
+    }
+};
+
+// @desc    Delete a session file/folder
+// @route   POST /api/v1/admin/sessions/delete
+// @access  Private (Admin)
+const deleteSession = (req, res) => {
+    const { sessionFile } = req.body;
+    if (!sessionFile || !/^[a-zA-Z0-9-_]+$/.test(sessionFile)) {
+        return res.redirect('/admin/sessions?error=Nama file sesi tidak valid.');
+    }
+
+    const sessionPath = path.join(__dirname, '..', 'sessions', sessionFile);
+
+    try {
+        if (fs.existsSync(sessionPath)) {
+            fs.rmSync(sessionPath, { recursive: true, force: true });
+            return res.redirect('/admin/sessions?success=Sesi berhasil dihapus.');
+        } else {
+            return res.redirect('/admin/sessions?error=File sesi tidak ditemukan.');
+        }
+    } catch (error) {
+        console.error(`Error deleting session ${sessionFile}:`, error);
+        return res.redirect(`/admin/sessions?error=Gagal menghapus sesi ${sessionFile}.`);
+    }
+};
+
+
+// @desc    Render Edit User Page
+// @route   GET /admin/users/edit/:id
+// @access  Private (Admin)
+const renderEditUserPage = async (req, res) => {
+    try {
+        const [userToEdit, packages] = await Promise.all([
+            db.User.findByPk(req.params.id),
+            db.Package.findAll()
+        ]);
+
+        if (!userToEdit) {
+            return res.status(404).send('User not found.');
+        }
+
+        res.render('admin/edit-user', { userToEdit, packages, query: req.query || {} });
+    } catch (error) {
+        console.error("Render Edit User Page Error:", error);
+        res.status(500).send('Error loading edit user page.');
+    }
+};
+
+// @desc    Handle Edit User Form Submission
+// @route   POST /api/v1/admin/users/edit/:id
+// @access  Private (Admin)
+const updateUser = async (req, res) => {
+    try {
+        const user = await db.User.findByPk(req.params.id);
+        if (!user) {
+            return res.status(404).send('User not found.');
+        }
+
+        const { email, name, phone, messageLimit, packageId, isBlocked } = req.body;
+
+        await user.update({
+            email,
+            name,
+            phone,
+            messageLimit: parseInt(messageLimit, 10),
+            packageId: parseInt(packageId, 10),
+            isBlocked: isBlocked === 'on' // Checkbox sends 'on'
+        });
+
+        res.redirect('/admin/users');
+    } catch (error) {
+        console.error("Handle Edit User Error:", error);
+        res.redirect(`/admin/users/edit/${req.params.id}?error=Failed to update user.`);
+    }
+};
+
+// @desc    Handle Delete User
+// @route   POST /api/v1/admin/users/delete/:id
+// @access  Private (Admin)
+const deleteUser = async (req, res) => {
+    try {
+        const user = await db.User.findByPk(req.params.id);
+        if (user) {
+            await user.destroy();
+        }
+        res.redirect('/admin/users');
+    } catch (error) {
+        console.error("Handle Delete User Error:", error);
+        res.status(500).send('Error deleting user.');
+    }
+};
+
 module.exports = {
     showLoginPage,
     loginAdmin,
@@ -205,4 +293,9 @@ module.exports = {
     showUsersPage,
     toggleUserBlock,
     showTransactionsPage,
+    renderSessionsPage,
+    deleteSession,
+    renderEditUserPage,
+    updateUser,
+    deleteUser,
 };

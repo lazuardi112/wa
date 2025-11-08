@@ -5,7 +5,9 @@ const {
     showDashboard,
     showSettingsPage,
     showUsersPage,
-    showTransactionsPage
+    showTransactionsPage,
+    renderSessionsPage,
+    renderEditUserPage,
 } = require('../controllers/adminController');
 
 // Middleware to protect admin routes
@@ -16,13 +18,15 @@ const isAdmin = (req, res, next) => {
     res.redirect('/admin/login');
 };
 
-// Public route for admin login page
+// ========= PUBLIC VIEW ROUTE =========
 router.get('/login', showLoginPage);
 
-// Protected admin page routes
+// ========= PROTECTED VIEW ROUTES (GET) =========
 router.get('/dashboard', isAdmin, showDashboard);
 router.get('/settings', isAdmin, showSettingsPage);
 router.get('/users', isAdmin, showUsersPage);
 router.get('/transactions', isAdmin, showTransactionsPage);
+router.get('/sessions', isAdmin, renderSessionsPage);
+router.get('/users/edit/:id', isAdmin, renderEditUserPage);
 
 module.exports = router;

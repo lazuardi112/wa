@@ -1,0 +1,45 @@
+<%- include('../partials/admin_header', { title: 'Manajemen Sesi', active: 'sessions' }) %>
+
+<div class="header">
+    <h1>Manajemen Sesi</h1>
+    <p>Hapus file sesi untuk memaksa perangkat melakukan scan QR ulang.</p>
+</div>
+
+<% if (query.success) { %>
+    <div class="alert alert-success"><%= query.success %></div>
+<% } %>
+<% if (query.error) { %>
+    <div class="alert alert-danger"><%= query.error %></div>
+<% } %>
+
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>Nama File Sesi</th>
+                <th>Tindakan</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% if (sessions && sessions.length > 0) { %>
+                <% sessions.forEach(session => { %>
+                    <tr>
+                        <td><%= session %></td>
+                        <td>
+                            <form action="/admin/sessions/delete" method="POST" style="display: inline;" onsubmit="return confirm('Apakah Anda yakin ingin menghapus sesi ini?');">
+                                <input type="hidden" name="sessionFile" value="<%= session %>">
+                                <button type="submit" class="btn btn-sm btn-danger">Hapus</button>
+                            </form>
+                        </td>
+                    </tr>
+                <% }); %>
+            <% } else { %>
+                <tr>
+                    <td colspan="2" class="text-center">Tidak ada file sesi yang ditemukan.</td>
+                </tr>
+            <% } %>
+        </tbody>
+    </table>
+</div>
+
+<%- include('../partials/admin_footer') %>
