@@ -40,7 +40,7 @@ const createTransaction = async (userId, orderId, amount) => {
     // Correctly set the API URL based on environment
     const baseUrl = config.isProduction
         ? 'https://api.midtrans.com'
-        : 'https://api.sandbox.midtrans.com';
+        : 'https://api.midtrans.com';
     const url = `${baseUrl}/v2/charge`;
 
     const headers = {

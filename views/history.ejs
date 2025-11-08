@@ -1,5 +1,82 @@
 <%- include('partials/header', { title: 'Riwayat Transaksi', active: 'history' }) %>
 
+<style>
+  .header h1 {
+    text-align: center;
+    margin-top: 20px;
+    font-weight: 700;
+  }
+
+  .table-container {
+    padding: 20px;
+    overflow-x: auto;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+  }
+
+  thead {
+    background: #f7f9fc;
+  }
+
+  th, td {
+    padding: 14px 16px;
+    text-align: left;
+  }
+
+  th {
+    font-weight: 700;
+    color: #333;
+    font-size: 14px;
+  }
+
+  tbody tr:nth-child(even) {
+    background: #fafafa;
+  }
+
+  tbody tr:hover {
+    background: #f0f7ff;
+  }
+
+  /* STATUS BADGES */
+  .status {
+    padding: 6px 12px;
+    border-radius: 14px;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    display: inline-block;
+  }
+
+  .status-success {
+    background: #d4f8df;
+    color: #1e9b4f;
+  }
+
+  .status-failed {
+    background: #ffe0e0;
+    color: #d93025;
+  }
+
+  .status-pending {
+    background: #fff3cd;
+    color: #b58a00;
+  }
+
+  @media (max-width: 600px) {
+    th, td {
+      padding: 10px;
+      font-size: 13px;
+    }
+  }
+</style>
+
 <div class="header">
   <h1>Riwayat Transaksi</h1>
 </div>
@@ -19,18 +96,36 @@
     <tbody>
       <% if (transactions && transactions.length > 0) { %>
         <% transactions.forEach(trx => { %>
+
+          <% 
+            // Ubah status jadi lowercase aman untuk CSS
+            const statusClass = trx.status.toLowerCase();
+          %>
+
           <tr>
             <td><%= trx.orderId %></td>
             <td><%= trx.package.name %></td>
             <td>IDR <%= trx.amount.toLocaleString() %></td>
-            <td><span class="status status-<%= trx.status %>"><%= trx.status %></span></td>
+
+            <td>
+              <span class="status status-<%= statusClass %>">
+                <%= trx.status %>
+              </span>
+            </td>
+
             <td><%= new Date(trx.createdAt).toLocaleDateString('id-ID') %></td>
-            <td><%= trx.expiresAt ? new Date(trx.expiresAt).toLocaleDateString('id-ID') : 'N/A' %></td>
+
+            <td>
+              <%= trx.expiresAt ? new Date(trx.expiresAt).toLocaleDateString('id-ID') : 'N/A' %>
+            </td>
           </tr>
+
         <% }); %>
       <% } else { %>
         <tr>
-          <td colspan="6" style="text-align: center;">Tidak ada transaksi ditemukan.</td>
+          <td colspan="6" style="text-align:center; padding:20px;">
+            Tidak ada transaksi ditemukan.
+          </td>
         </tr>
       <% } %>
     </tbody>
