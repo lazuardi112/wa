@@ -2,10 +2,12 @@ const {
     default: makeWASocket,
     useMultiFileAuthState,
     DisconnectReason,
-    Browsers
+    Browsers,
+    fetchLatestBaileysVersion
 } = require('@whiskeysockets/baileys');
 
 const { Boom } = require('@hapi/boom');
+const fs = require('fs');
 const path = require('path');
 const pino = require('pino');
 const db = require('../models');
@@ -18,25 +20,18 @@ const sessions = new Map();
 async function connectToWhatsApp(instanceId, deviceId) {
     const sessionPath = path.join(__dirname, '..', 'sessions', instanceId);
     const { state, saveCreds } = await useMultiFileAuthState(sessionPath);
+    const { version, isLatest } = await fetchLatestBaileysVersion();
+    console.log(`[${instanceId}] Using WA v${version.join('.')}, isLatest: ${isLatest}`);
 
     const io = getIO();
-
     const logger = pino({ level: "silent" });
 
     const sock = makeWASocket({
         auth: state,
         printQRInTerminal: false,
         logger,
-
-        // FIX 405 → gunakan user-agent yang pasti diterima WhatsApp
-        browser: ['Chrome', 'Linux', '3.0'],
-
-        // FIX 405 → WA Web versi terbaru yang stabil untuk Baileys
-        version: [2, 3000, 101],
-
-        syncFullHistory: false,
-
-        // FIX LOOP → jangan auto reconnect
+        browser: Browsers.macOS('Chrome'),
+        version,
         shouldReconnect: () => false
     });
 
@@ -90,8 +85,21 @@ async function connectToWhatsApp(instanceId, deviceId) {
 }
 
 async function generateQRCode(instanceId, deviceId) {
-    if (sessions.has(instanceId)) return;
-    console.log(`[${instanceId}] Creating new session…`);
+    const sessionPath = path.join(__dirname, '..', 'sessions', instanceId);
+
+    // Hapus paksa direktori sesi yang ada untuk memastikan awal yang bersih
+    if (fs.existsSync(sessionPath)) {
+        console.log(`[${instanceId}] Removing existing session files...`);
+        fs.rmSync(sessionPath, { recursive: true, force: true });
+    }
+
+    // Hapus instance sesi yang ada dari memori jika ada
+    if (sessions.has(instanceId)) {
+        console.log(`[${instanceId}] Deleting in-memory session...`);
+        deleteSession(instanceId, false); // Jangan panggil logout karena koneksi mungkin sudah mati
+    }
+
+    console.log(`[${instanceId}] Creating new session...`);
     connectToWhatsApp(instanceId, deviceId);
 }
 
