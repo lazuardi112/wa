@@ -1,0 +1,13 @@
+<%- include('partials/header', { title: 'Error', active: '' }) %>
+
+<div class="header">
+    <h1>Terjadi Kesalahan</h1>
+</div>
+
+<div class="container" style="text-align: center; padding-top: 2rem;">
+    <h2><%= message %></h2>
+    <p>Silakan coba lagi nanti atau hubungi dukungan jika masalah berlanjut.</p>
+    <a href="/dashboard" class="btn" style="margin-top: 1rem;">Kembali ke Dashboard</a>
+</div>
+
+<%- include('partials/footer') %>
