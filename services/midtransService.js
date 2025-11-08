@@ -67,7 +67,7 @@ const createTransaction = async (userId, orderId, amount) => {
         const response = await axios.post(url, body, { headers });
         return response.data; // Return the full response from Midtrans
     } catch (error) {
-        console.error('Midtrans API request failed:', error.response ? error.response.data : error.message);
+        console.error('Midtrans API request failed:', JSON.stringify(error.response?.data, null, 2) || error.message);
         const errorMessage = error.response?.data?.status_message || 'Failed to create Midtrans transaction.';
         throw new Error(errorMessage);
     }

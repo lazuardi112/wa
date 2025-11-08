@@ -22,6 +22,15 @@ const createSubscription = async (req, res) => {
 
         const orderId = `SUB-${userId}-${Date.now()}`;
         const totalAmount = packageToBuy.price * numMonths;
+
+        // Enhanced Validation and Logging
+        console.log(`[Payment] Attempting to create transaction for user ${userId} with package ${packageId}.`);
+        console.log(`[Payment] Package details:`, JSON.stringify(packageToBuy, null, 2));
+        console.log(`[Payment] Calculated amount: ${packageToBuy.price} * ${numMonths} = ${totalAmount}`);
+
+        if (totalAmount <= 0) {
+            return res.status(400).json({ message: 'Total amount must be greater than zero.' });
+        }
         const totalDurationDays = packageToBuy.durationDays * numMonths;
 
         // Create a pending transaction record
