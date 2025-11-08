@@ -1,4 +1,4 @@
-const { generateQRCode, deleteSession, reconnectSession } = require('../services/whatsappService');
+const { generateQRCode, deleteSession } = require('../services/whatsappService');
 const db = require('../models');
 
 // @desc    Create a new device and generate QR code
@@ -81,8 +81,8 @@ const reconnectDevice = async (req, res) => {
              return res.status(400).json({ success: false, message: 'Device is already connected.'});
         }
 
-        // Gunakan instanceId untuk menyambungkan kembali sesi
-        reconnectSession(device.instanceId, device.id);
+        // Gunakan instanceId untuk menghasilkan QR baru, yang secara efektif menyambungkan kembali
+        generateQRCode(device.instanceId, device.id);
 
         res.status(200).json({
             success: true,

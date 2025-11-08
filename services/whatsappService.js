@@ -18,70 +18,70 @@ const { processMessage } = require('./botService');
 const sessions = new Map();
 
 async function connectToWhatsApp(instanceId, deviceId) {
-    const sessionPath = path.join(__dirname, '..', 'sessions', instanceId);
-    const { state, saveCreds } = await useMultiFileAuthState(sessionPath);
-    const { version, isLatest } = await fetchLatestBaileysVersion();
-    console.log(`[${instanceId}] Using WA v${version.join('.')}, isLatest: ${isLatest}`);
-
     const io = getIO();
-    const logger = pino({ level: "silent" });
+    try {
+        const sessionPath = path.join(__dirname, '..', 'sessions', instanceId);
+        const { state, saveCreds } = await useMultiFileAuthState(sessionPath);
 
-    const sock = makeWASocket({
-        auth: state,
-        printQRInTerminal: false,
-        logger,
-        browser: Browsers.macOS('Chrome'),
-        version,
-        shouldReconnect: () => false
-    });
+        const logger = pino({ level: "debug" });
 
-    sessions.set(instanceId, { sock, deviceId });
+        const sock = makeWASocket({
+            auth: state,
+            printQRInTerminal: false,
+            logger
+        });
 
-    sock.ev.on('creds.update', saveCreds);
+        sessions.set(instanceId, { sock, deviceId });
 
-    sock.ev.on('connection.update', async (update) => {
-        const { connection, lastDisconnect, qr } = update;
+        sock.ev.on('creds.update', saveCreds);
 
-        if (qr) {
-            console.log(`[${instanceId}] QR Received`);
-            const qrCode = await qrcode.toDataURL(qr);
-            io.to(instanceId).emit('qr_code', qrCode);
+        sock.ev.on('connection.update', async (update) => {
+            const { connection, lastDisconnect, qr } = update;
 
-            await db.Device.update({ status: "waiting_qr" }, { where: { id: deviceId } });
-        }
-
-        if (connection === 'open') {
-            console.log(`[${instanceId}] Connected`);
-            await db.Device.update({ status: "connected" }, { where: { id: deviceId } });
-
-            io.to(instanceId).emit('status_update', {
-                status: "CONNECTED",
-                message: "Device connected",
-                instanceId
-            });
-        }
-
-        if (connection === 'close') {
-            const reason = new Boom(lastDisconnect?.error)?.output?.statusCode;
-
-            console.log(`[${instanceId}] Closed → ${reason}`);
-
-            await db.Device.update({ status: "disconnected" }, { where: { id: deviceId } });
-
-            // FIX 405 LOOP (NO AUTO RECONNECT)
-            if (reason === DisconnectReason.loggedOut) {
-                console.log(`[${instanceId}] Logged out, deleting session`);
-                deleteSession(instanceId, true);
+            if (qr) {
+                console.log(`[${instanceId}] QR Received`);
+                const qrCode = await qrcode.toDataURL(qr);
+                io.to(instanceId).emit('qr_code', qrCode);
+                await db.Device.update({ status: "waiting_qr" }, { where: { id: deviceId } });
             }
-        }
-    });
 
-    sock.ev.on('messages.upsert', async ({ messages }) => {
-        const msg = messages[0];
-        await processMessage(sock, msg, instanceId, deviceId);
-    });
+            if (connection === 'close') {
+                const shouldReconnect = (lastDisconnect.error instanceof Boom)?.output?.statusCode !== DisconnectReason.loggedOut;
+                console.log(`[${instanceId}] Connection closed due to`, lastDisconnect.error, `, reconnecting `, shouldReconnect);
 
-    return sock;
+                await db.Device.update({ status: "disconnected" }, { where: { id: deviceId } });
+
+                if (shouldReconnect) {
+                    connectToWhatsApp(instanceId, deviceId);
+                } else {
+                    console.log(`[${instanceId}] Not reconnecting, device logged out.`);
+                    deleteSession(instanceId, true);
+                }
+            } else if (connection === 'open') {
+                console.log(`[${instanceId}] Connected`);
+                await db.Device.update({ status: "connected" }, { where: { id: deviceId } });
+                io.to(instanceId).emit('status_update', {
+                    status: "CONNECTED",
+                    message: "Device connected",
+                    instanceId
+                });
+            }
+        });
+
+        sock.ev.on('messages.upsert', async ({ messages }) => {
+            const msg = messages[0];
+            await processMessage(sock, msg, instanceId, deviceId);
+        });
+
+        return sock;
+    } catch (error) {
+        console.error(`[${instanceId}] Fatal error during connection:`, error);
+        io.to(instanceId).emit('status_update', {
+            status: "ERROR",
+            message: "Gagal memulai koneksi WhatsApp. Silakan periksa log server.",
+            instanceId
+        });
+    }
 }
 
 async function generateQRCode(instanceId, deviceId) {
@@ -124,6 +124,7 @@ async function reconnectExistingSessions() {
     }
 }
 
+
 function getClient(instanceId) {
     return sessions.get(instanceId)?.sock;
 }
@@ -144,5 +145,5 @@ module.exports = {
     deleteSession,
     reconnectExistingSessions,
     getClient,
-    sendMessage
+    sendMessage,
 };

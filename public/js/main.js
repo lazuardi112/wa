@@ -71,7 +71,16 @@ document.addEventListener('DOMContentLoaded', () => {
         qrCodeContainer.innerHTML = `<img id="qr-code-display" src="${qrCodeDataUrl}" alt="QR Code">`;
     });
 
+    let qrTimeout;
+
     socket.on('status_update', (data) => {
+        clearTimeout(qrTimeout); // Hapus timeout jika ada status update
+
+        if (data.status === 'ERROR') {
+            qrCodeContainer.innerHTML = `<p class="error-text"><b>Gagal:</b> ${data.message}</p>`;
+            return;
+        }
+
         if (data.status === 'CONNECTED' && data.instanceId === currentInstanceId) {
             Swal.fire({
                 icon: 'success',
@@ -138,16 +147,17 @@ document.addEventListener('DOMContentLoaded', () => {
     generateQrBtn.addEventListener('click', async () => {
         const deviceName = deviceNameInput.value.trim();
         if (!deviceName) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Input Diperlukan',
-                text: 'Silakan masukkan nama untuk perangkat.'
-            });
+            Swal.fire({ icon: 'warning', title: 'Input Diperlukan', text: 'Silakan masukkan nama untuk perangkat.' });
             return;
         }
 
         qrCodeContainer.style.display = 'block';
         qrCodeContainer.innerHTML = '<p class="loading-text">Menghasilkan kode QR, harap tunggu...</p>';
+
+        // Set a timeout
+        qrTimeout = setTimeout(() => {
+            qrCodeContainer.innerHTML = `<p class="error-text"><b>Waktu habis:</b> Server tidak merespons. Silakan coba lagi nanti.</p>`;
+        }, 20000); // 20 seconds
 
         try {
             const response = await fetch('/api/v1/devices', {
@@ -156,58 +166,62 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({ deviceName }),
             });
 
+            const data = await response.json();
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Gagal membuat perangkat.');
+                throw new Error(data.message || 'Gagal membuat perangkat.');
             }
 
-            const data = await response.json();
             currentInstanceId = data.instanceId;
             socket.emit('join_room', currentInstanceId);
 
         } catch (error) {
-            qrCodeContainer.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            clearTimeout(qrTimeout);
+            qrCodeContainer.innerHTML = `<p class="error-text">Error: ${error.message}</p>`;
         }
     });
   }
 });
 
 async function handleReconnect(deviceId, instanceId) {
-  const modal = document.getElementById('add-device-modal');
-  const modalTitle = document.getElementById('modal-title');
-  const modalDescription = document.getElementById('modal-description');
-  const modalInputContainer = document.getElementById('modal-input-container');
-  const qrCodeContainer = document.getElementById('qr-code-container');
+    const modal = document.getElementById('add-device-modal');
+    const modalTitle = document.getElementById('modal-title');
+    const modalDescription = document.getElementById('modal-description');
+    const modalInputContainer = document.getElementById('modal-input-container');
+    const qrCodeContainer = document.getElementById('qr-code-container');
+    const socket = io(); // Assuming socket is available here as per original code
+    let qrTimeout;
 
-  modal.style.display = 'flex';
+    modal.style.display = 'flex';
+    let currentInstanceId = instanceId;
+    socket.emit('join_room', currentInstanceId);
 
-  // This logic is global now, so we need to ensure socket is available.
-  // A better implementation would be to instantiate socket once.
-  const socket = io();
-  let currentInstanceId = instanceId;
-  socket.emit('join_room', currentInstanceId);
+    modalTitle.textContent = 'Hubungkan Ulang Perangkat';
+    modalDescription.textContent = 'Silakan pindai kode QR baru untuk menghubungkan ulang perangkat Anda.';
+    modalInputContainer.style.display = 'none';
 
-  modalTitle.textContent = 'Hubungkan Ulang Perangkat';
-  modalDescription.textContent = 'Silakan pindai kode QR baru untuk menghubungkan ulang perangkat Anda.';
-  modalInputContainer.style.display = 'none';
+    qrCodeContainer.style.display = 'block';
+    qrCodeContainer.innerHTML = '<p class="loading-text">Meminta kode QR baru, harap tunggu...</p>';
 
-  qrCodeContainer.style.display = 'block';
-  qrCodeContainer.innerHTML = '<p class="loading-text">Meminta kode QR baru, harap tunggu...</p>';
+    // Set a timeout
+    qrTimeout = setTimeout(() => {
+        qrCodeContainer.innerHTML = `<p class="error-text"><b>Waktu habis:</b> Server tidak merespons. Silakan coba lagi nanti.</p>`;
+    }, 20000); // 20 seconds
 
-  try {
-      const response = await fetch('/api/v1/devices/reconnect', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ deviceId }),
-      });
+    try {
+        const response = await fetch('/api/v1/devices/reconnect', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ deviceId }),
+        });
 
-      if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || 'Gagal menghubungkan ulang perangkat.');
-      }
-  } catch (error) {
-      qrCodeContainer.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
-  }
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.message || 'Gagal menghubungkan ulang perangkat.');
+        }
+    } catch (error) {
+        clearTimeout(qrTimeout);
+        qrCodeContainer.innerHTML = `<p class="error-text">Error: ${error.message}</p>`;
+    }
 }
 
 async function deleteDevice(deviceId) {
