@@ -21,7 +21,7 @@ async function connectToWhatsApp(instanceId, deviceId) {
     const sock = makeWASocket({
         auth: state,
         printQRInTerminal: false,
-        browser: ['WAPI', 'Chrome', '1.0'], // Menggunakan User Agent kustom yang lebih umum
+        browser: Browsers.macOS('Chrome'), // Menggunakan User Agent standar yang diperbarui
         logger,
     });
 
