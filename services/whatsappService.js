@@ -31,7 +31,7 @@ async function connectToWhatsApp(instanceId, deviceId) {
             auth: state,
             printQRInTerminal: false,
             logger,
-            browser: Browsers.linux('Chrome'),
+            browser: Browsers.ubuntu('Chrome'),
             version
         });
 
