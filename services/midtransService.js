@@ -37,9 +37,11 @@ const getMidtransConfig = async () => {
 const createTransaction = async (userId, orderId, amount) => {
     const config = await getMidtransConfig();
 
-    const url = config.isProduction
-        ? 'https://api.midtrans.com/v2/charge'
-        : 'https://api.midtrans.com/v2/charge';
+    // Correctly set the API URL based on environment
+    const baseUrl = config.isProduction
+        ? 'https://api.midtrans.com'
+        : 'https://api.sandbox.midtrans.com';
+    const url = `${baseUrl}/v2/charge`;
 
     const headers = {
         'Content-Type': 'application/json',
@@ -59,7 +61,7 @@ const createTransaction = async (userId, orderId, amount) => {
             gross_amount: amount,
         },
         qris: {
-            acquirer: 'gopay' // This is often required for QRIS generation
+            acquirer: 'gopay'
         }
     };
 
