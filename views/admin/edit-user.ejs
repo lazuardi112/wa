@@ -1,0 +1,51 @@
+<%- include('../partials/admin_header', { title: 'Edit Pengguna', active: 'users' }) %>
+
+<div class="header">
+    <h1>Edit Pengguna</h1>
+</div>
+
+<div class="container-fluid">
+    <div class="card">
+        <div class="card-body">
+            <form action="/admin/users/edit/<%= userToEdit.id %>" method="POST">
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" class="form-control" id="email" name="email" value="<%= userToEdit.email %>" required>
+                </div>
+                <div class="form-group">
+                    <label for="name">Nama</label>
+                    <input type="text" class="form-control" id="name" name="name" value="<%= userToEdit.name %>" required>
+                </div>
+                <div class="form-group">
+                    <label for="phone">Telepon</label>
+                    <input type="text" class="form-control" id="phone" name="phone" value="<%= userToEdit.phone %>">
+                </div>
+                 <div class="form-group">
+                    <label for="messageLimit">Batas Pesan Harian</label>
+                    <input type="number" class="form-control" id="messageLimit" name="messageLimit" value="<%= userToEdit.messageLimit %>" required>
+                </div>
+                <div class="form-group">
+                    <label for="packageId">Paket</label>
+                    <select class="form-control" id="packageId" name="packageId">
+                        <% packages.forEach(pkg => { %>
+                            <option value="<%= pkg.id %>" <%= userToEdit.packageId === pkg.id ? 'selected' : '' %>>
+                                <%= pkg.name %>
+                            </option>
+                        <% }); %>
+                    </select>
+                </div>
+                <div class="form-group">
+                  <label for="isBlocked">Blokir Pengguna</label>
+                  <select class="form-control" id="isBlocked" name="isBlocked">
+                      <option value="false" <%= !userToEdit.isBlocked ? 'selected' : '' %>>Tidak</option>
+                      <option value="true" <%= userToEdit.isBlocked ? 'selected' : '' %>>Ya</option>
+                  </select>
+              </div>
+                <button type="submit" class="btn btn-primary mt-3">Simpan Perubahan</button>
+                <a href="/admin/users" class="btn btn-secondary mt-3">Batal</a>
+            </form>
+        </div>
+    </div>
+</div>
+
+<%- include('../partials/admin_footer') %>
